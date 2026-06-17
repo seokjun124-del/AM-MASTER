@@ -231,7 +231,21 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
       <p>BWTS · SOX Scrubber MRO 서비스 수주 현황 및 2026 파이프라인</p>
     </div>
 
-    <!-- KPI 5개 -->
+    <!-- 재계약 알림 배너 -->
+    <div id="reminderBanner" style="display:none;background:#fff1f1;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#b91c1c">재계약 컨택 필요</div>
+          <div style="font-size:12px;color:#ef4444;margin-top:2px">2025년 수주했으나 2026년 견적 미발송 호선</div>
+        </div>
+      </div>
+      <button onclick="openReminderModal()" id="reminderBtn" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">
+        0척 확인
+      </button>
+    </div>
     <div class="kpi-grid5">
       <div class="kpi5 kpi5-blue">
         <div class="kpi5-top">
@@ -417,6 +431,32 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 </div>
 
+<!-- 재계약 모달 -->
+<div class="modal-overlay" id="reminderOverlay" onclick="closeReminderModal(event)">
+  <div class="modal" style="width:560px">
+    <div class="modal-hd">
+      <div>
+        <h2 id="reminderModalTitle">재계약 컨택 필요 호선</h2>
+        <div style="font-size:12px;color:#7a85a3;margin-top:3px">2025년 수주 후 330일 경과 · 2026년 견적 미발송</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('reminderOverlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-bd">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="border-bottom:1.5px solid #e8ecf5">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#7a85a3;font-weight:700">선명</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#7a85a3;font-weight:700">선주사</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#7a85a3;font-weight:700">2025년 승선일</th>
+            <th style="padding:8px 10px;text-align:center;font-size:11px;color:#7a85a3;font-weight:700">상세</th>
+          </tr>
+        </thead>
+        <tbody id="reminderTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- VESSEL MODAL -->
 <div class="modal-overlay" id="mOverlay" onclick="closeMo(event)">
   <div class="modal">
@@ -556,6 +596,7 @@ async function loadData() {
 
     hideLoading();
     initDash();
+    calcReminder();
     curData = allData();
     renderRTable(curData);
     renderCGrid('');
@@ -642,7 +683,61 @@ function initDash() {
   }).join('');
 }
 
-// ======================== SEARCH ========================
+// ======================== 재계약 알림 ========================
+let reminderVessels = [];
+
+function calcReminder() {
+  const today = new Date();
+  reminderVessels = BWTS.filter(r => {
+    if (!r.order25 || r.est26) return false; // 2025 수주 없거나 2026 견적 있으면 제외
+    if (!r.date25) return false;
+    // 날짜 파싱 (2025. 2. 13 형식)
+    const clean = r.date25.replace(/\./g, '-').replace(/\s/g, '').replace(/--/g, '-').replace(/-$/,'');
+    const parts = clean.split('-').map(p => parseInt(p));
+    if (parts.length < 3 || isNaN(parts[0])) return false;
+    const execDate = new Date(parts[0], parts[1]-1, parts[2]);
+    const diffDays = (today - execDate) / (1000 * 60 * 60 * 24);
+    return diffDays >= 330;
+  });
+
+  const banner = document.getElementById('reminderBanner');
+  const btn = document.getElementById('reminderBtn');
+  if (reminderVessels.length > 0) {
+    banner.style.display = 'flex';
+    btn.textContent = `${reminderVessels.length}척 확인`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function openReminderModal() {
+  document.getElementById('reminderModalTitle').textContent = `재계약 컨택 필요 호선 (${reminderVessels.length}척)`;
+  document.getElementById('reminderTableBody').innerHTML = reminderVessels.map((r, idx) => `
+    <tr style="border-bottom:1px solid #f0f2f7">
+      <td style="padding:10px 10px;font-weight:700;color:#0d1b3e">${r.ship}</td>
+      <td style="padding:10px 10px;font-size:12px;color:#5a6480">${r.owner}</td>
+      <td style="padding:10px 10px;font-size:12px;color:#5a6480">${r.date25||'-'}</td>
+      <td style="padding:10px 10px;text-align:center">
+        <button onclick="openReminderDetail(${BWTS.indexOf(r)})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #9ba3bc;background:none;cursor:pointer;font-size:11px;font-weight:800;color:#9ba3bc;font-family:inherit">i</button>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('reminderOverlay').classList.add('open');
+}
+
+function openReminderDetail(bwtsIdx) {
+  document.getElementById('reminderOverlay').classList.remove('open');
+  // curData에서 해당 선박 찾아서 모달 열기
+  const r = {...BWTS[bwtsIdx], _t:'BWTS'};
+  const tempIdx = curData.length;
+  curData.push(r);
+  openModal(tempIdx);
+}
+
+function closeReminderModal(e) {
+  if (e.target === document.getElementById('reminderOverlay'))
+    document.getElementById('reminderOverlay').classList.remove('open');
+}
 let curData = [];
 function setStab(t, el) {
   document.querySelectorAll('.search-tab').forEach(x=>x.classList.remove('active'));
@@ -747,108 +842,4 @@ function openModal(idx) {
         <div class="m-item"><label>OTP DATE</label><span>${r.otp||'-'}</span></div>
         <div class="m-item"><label>TUR 수량</label><span>${r.tur||'-'}</span></div>
         <div class="m-item"><label>PaH 수량</label><span>${r.pah||'-'}</span></div>
-        <div class="m-item"><label>계약금액</label><span>${r.cAmt||'-'}</span></div>
-        <div class="m-item"><label>계약 상태</label><span style="font-weight:700;color:${r.status==='계약유효'?'#10b981':r.status==='계약파기'?'#ef4444':'#f59e0b'}">${r.status||'-'}</span></div>
-      </div>
-    </div>`}
-  `;
-  document.getElementById('mOverlay').classList.add('open');
-}
-function closeMo(e){if(e.target===document.getElementById('mOverlay'))closeMoDirect();}
-function closeMoDirect(){document.getElementById('mOverlay').classList.remove('open');}
-
-function exportExcel(){
-  const data=curData.length?curData:allData();
-  const ws=XLSX.utils.json_to_sheet(data);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'선박현황');
-  XLSX.writeFile(wb,'PANASIA_AM_선박현황.xlsx');
-}
-
-// ======================== COUNTRY ========================
-let aMode='country', selItem=null;
-
-const ALL_C=[...new Set([
-  ...BWTS.map(r=>r.country==='South Korea'||r.country==='SOUTH KOREA'?'SOUTH KOREA':r.country.toUpperCase()),
-  ...SOX.map(r=>{const c=r.country;
-    if(c==='South Korea')return 'SOUTH KOREA';
-    return c.toUpperCase();
-  })
-])].sort();
-
-const ALL_O=[...new Set([...BWTS.map(r=>r.owner),...SOX.map(r=>r.owner)])].sort();
-
-function setAtab(mode,el){
-  aMode=mode;selItem=null;
-  document.querySelectorAll('.analysis-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('cInput').placeholder=mode==='country'?'국가 검색...':'선주사 검색...';
-  document.getElementById('cInput').value='';
-  renderCGrid('');
-  document.getElementById('cResult').classList.remove('show');
-}
-
-function filterC(){renderCGrid(document.getElementById('cInput').value.toLowerCase());}
-
-function renderCGrid(q){
-  const items=(aMode==='country'?ALL_C:ALL_O).filter(x=>!q||x.toLowerCase().includes(q));
-  document.getElementById('cGrid').innerHTML=items.map(x=>
-    `<button class="c-btn${selItem===x?' selected':''}" onclick="selC('${x.replace(/'/g,"\\'")}')">${x}</button>`
-  ).join('');
-}
-
-function normC(c){
-  if(!c)return '';
-  const u=c.toUpperCase();
-  if(u==='SOUTH KOREA')return 'SOUTH KOREA';
-  return u;
-}
-
-function selC(val){
-  selItem=val;
-  renderCGrid(document.getElementById('cInput').value.toLowerCase());
-  const nu=val.toUpperCase();
-  const bF=BWTS.filter(r=>aMode==='country'?normC(r.country)===nu:r.owner===val);
-  const sF=SOX.filter(r=>aMode==='country'?normC(r.country)===nu:r.owner===val);
-  const res=document.getElementById('cResult');
-  res.classList.add('show');
-  document.getElementById('cResultTitle').textContent=`${val} — BWTS ${bF.length}척 · SOX ${sF.length}건`;
-
-  if(aMode==='country'){
-    const om={};
-    bF.forEach(r=>{if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};om[r.owner].bwts.push(r);});
-    sF.forEach(r=>{if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};om[r.owner].sox.push(r);});
-    document.getElementById('oCards').innerHTML=Object.values(om).map(o=>`
-      <div class="owner-card" onclick="toggleVL('${o.owner.replace(/'/g,"\\'")}')">
-        <h4>${o.owner}</h4>
-        <div class="owner-card-stats">
-          <span class="tag tag-bwts">BWTS ${o.bwts.length}</span>
-          <span class="tag tag-sox">SOX ${o.sox.length}</span>
-        </div>
-        <div class="vessel-mini-list" id="vl-${o.owner.replace(/[^a-zA-Z0-9]/g,'_')}">
-          ${[...o.bwts.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-bwts" style="font-size:10px">${v.order25?'2025수주':'견적'}</span></div>`),
-             ...o.sox.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-sox" style="font-size:10px">${v.status||'SOX'}</span></div>`)].join('')}
-        </div>
-      </div>`).join('')||'<p style="color:#9ba3bc;font-size:13px;grid-column:1/-1">해당 국가의 데이터가 없습니다.</p>';
-    document.getElementById('dVessels').innerHTML='';
-  } else {
-    document.getElementById('oCards').innerHTML='';
-    const all=[...bF.map(r=>({...r,_t:'BWTS'})),...sF.map(r=>({...r,_t:'SOX'}))];
-    document.getElementById('dVessels').innerHTML=all.map(v=>`
-      <div class="v-row">
-        <span><span class="type-badge ${v._t==='BWTS'?'tb-bwts':'tb-sox'}" style="margin-right:8px">${v._t}</span><b>${v.ship}</b><span style="font-size:11px;color:#9ba3bc;margin-left:6px">${v.imo||''}</span></span>
-        <span style="font-size:11px;color:#5a6480">${v._t==='BWTS'?(v.order25?'2025 수주':'견적'):(v.status||'-')}</span>
-      </div>`).join('')||'<p style="color:#9ba3bc;font-size:13px">해당 선주사의 데이터가 없습니다.</p>';
-  }
-}
-
-function toggleVL(owner){
-  const el=document.getElementById('vl-'+owner.replace(/[^a-zA-Z0-9]/g,'_'));
-  if(el) el.style.display=el.style.display==='block'?'none':'block';
-}
-
-// ======================== INIT ========================
-loadData();
-</script>
-</body>
-</html>
+        <div class="m-item"><label>계약금액</label><span>${r.cAmt||'-'}</
