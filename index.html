@@ -472,13 +472,28 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 // ======================== CONFIG ========================
 const SHEET_ID = '13mvFbhAR_RJ95mt-HQy_lC_q9AmI0NIdEbo1XJvcZPc';
 const BWTS_GID = '0';
-const SOX_GID = '683055706';
+const SOX_GID = '1857604561';
 
 let BWTS = [];
 let SOX = [];
 
 function csvUrl(gid) {
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  const direct = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  return direct;
+}
+
+async function fetchCsv(gid) {
+  const url = csvUrl(gid);
+  // 직접 fetch 시도
+  try {
+    const res = await fetch(url, {redirect:'follow'});
+    if (res.ok) return await res.text();
+  } catch(e) {}
+  // CORS 프록시 fallback
+  const proxy = `https://corsproxy.io/?${encodeURIComponent(csvUrl(gid))}`;
+  const res2 = await fetch(proxy);
+  if (!res2.ok) throw new Error('데이터를 불러올 수 없습니다');
+  return await res2.text();
 }
 
 // CSV 파싱 (큰따옴표 포함 처리)
@@ -584,8 +599,8 @@ async function loadData() {
   try {
     // BWTS 시트
     const [r1, r2] = await Promise.all([
-      fetch(csvUrl(BWTS_GID)).then(r => r.text()),
-      fetch(csvUrl(SOX_GID)).then(r => r.text()),
+      fetchCsv(BWTS_GID),
+      fetchCsv(SOX_GID),
     ]);
     BWTS = parseBWTS(parseCSV(r1));
     SOX  = parseSOX(parseCSV(r2));
@@ -842,4 +857,94 @@ function openModal(idx) {
         <div class="m-item"><label>OTP DATE</label><span>${r.otp||'-'}</span></div>
         <div class="m-item"><label>TUR 수량</label><span>${r.tur||'-'}</span></div>
         <div class="m-item"><label>PaH 수량</label><span>${r.pah||'-'}</span></div>
-        <div class="m-item"><label>계약금액</label><span>${r.cAmt||'-'}</
+        <div class="m-item"><label>계약금액</label><span>${r.cAmt||'-'}</span></div>
+        <div class="m-item"><label>계약 상태</label><span style="font-weight:700;color:${r.status==='계약유효'?'#10b981':r.status==='계약파기'?'#ef4444':'#f59e0b'}">${r.status||'-'}</span></div>
+      </div>
+    </div>`}
+  `;
+  document.getElementById('mOverlay').classList.add('open');
+}
+function closeMo(e){if(e.target===document.getElementById('mOverlay'))closeMoDirect();}
+function closeMoDirect(){document.getElementById('mOverlay').classList.remove('open');}
+
+function exportExcel(){
+  const data=curData.length?curData:allData();
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'선박현황');
+  XLSX.writeFile(wb,'PANASIA_AM_선박현황.xlsx');
+}
+
+// ======================== COUNTRY ========================
+let aMode='country', selItem=null;
+
+const ALL_C=[...new Set([
+  ...BWTS.map(r=>r.country==='South Korea'||r.country==='SOUTH KOREA'?'SOUTH KOREA':r.country.toUpperCase()),
+  ...SOX.map(r=>{const c=r.country;
+    if(c==='South Korea')return 'SOUTH KOREA';
+    return c.toUpperCase();
+  })
+])].sort();
+
+const ALL_O=[...new Set([...BWTS.map(r=>r.owner),...SOX.map(r=>r.owner)])].sort();
+
+function setAtab(mode,el){
+  aMode=mode;selItem=null;
+  document.querySelectorAll('.analysis-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cInput').placeholder=mode==='country'?'국가 검색...':'선주사 검색...';
+  document.getElementById('cInput').value='';
+  renderCGrid('');
+  document.getElementById('cResult').classList.remove('show');
+}
+
+function filterC(){renderCGrid(document.getElementById('cInput').value.toLowerCase());}
+
+function renderCGrid(q){
+  const items=(aMode==='country'?ALL_C:ALL_O).filter(x=>!q||x.toLowerCase().includes(q));
+  document.getElementById('cGrid').innerHTML=items.map(x=>
+    `<button class="c-btn${selItem===x?' selected':''}" onclick="selC('${x.replace(/'/g,"\\'")}')">${x}</button>`
+  ).join('');
+}
+
+function normC(c){
+  if(!c)return '';
+  const u=c.toUpperCase();
+  if(u==='SOUTH KOREA')return 'SOUTH KOREA';
+  return u;
+}
+
+function selC(val){
+  selItem=val;
+  renderCGrid(document.getElementById('cInput').value.toLowerCase());
+  const nu=val.toUpperCase();
+  const bF=BWTS.filter(r=>aMode==='country'?normC(r.country)===nu:r.owner===val);
+  const sF=SOX.filter(r=>aMode==='country'?normC(r.country)===nu:r.owner===val);
+  const res=document.getElementById('cResult');
+  res.classList.add('show');
+  document.getElementById('cResultTitle').textContent=`${val} — BWTS ${bF.length}척 · SOX ${sF.length}건`;
+
+  if(aMode==='country'){
+    const om={};
+    bF.forEach(r=>{if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};om[r.owner].bwts.push(r);});
+    sF.forEach(r=>{if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};om[r.owner].sox.push(r);});
+    document.getElementById('oCards').innerHTML=Object.values(om).map(o=>`
+      <div class="owner-card" onclick="toggleVL('${o.owner.replace(/'/g,"\\'")}')">
+        <h4>${o.owner}</h4>
+        <div class="owner-card-stats">
+          <span class="tag tag-bwts">BWTS ${o.bwts.length}</span>
+          <span class="tag tag-sox">SOX ${o.sox.length}</span>
+        </div>
+        <div class="vessel-mini-list" id="vl-${o.owner.replace(/[^a-zA-Z0-9]/g,'_')}">
+          ${[...o.bwts.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-bwts" style="font-size:10px">${v.order25?'2025수주':'견적'}</span></div>`),
+             ...o.sox.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-sox" style="font-size:10px">${v.status||'SOX'}</span></div>`)].join('')}
+        </div>
+      </div>`).join('')||'<p style="color:#9ba3bc;font-size:13px;grid-column:1/-1">해당 국가의 데이터가 없습니다.</p>';
+    document.getElementById('dVessels').innerHTML='';
+  } else {
+    document.getElementById('oCards').innerHTML='';
+    const all=[...bF.map(r=>({...r,_t:'BWTS'})),...sF.map(r=>({...r,_t:'SOX'}))];
+    document.getElementById('dVessels').innerHTML=all.map(v=>`
+      <div class="v-row">
+        <span><span class="type-badge ${v._t==='BWTS'?'tb-bwts':'tb-sox'}" style="margin-right:8px">${v._t}</span><b>${v.ship}</b><span style="font-size:11px;color:#9ba3bc;margin-left:6px">${v.imo||''}</span></span>
+        <span style="font-size:11px;color:#5a6480">${v._t==='BWTS'?(v.order25?'2025 수주':'견�
