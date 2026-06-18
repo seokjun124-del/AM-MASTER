@@ -88,54 +88,34 @@ async function loadData() {
   }
 }
 
-// BWTS 시트 파싱
+// BWTS 시트 파싱 - 열 인덱스 직접 지정
 function parseBWTSCsv(text) {
   const rows = parseCSVRows(text);
   if (rows.length < 2) return [];
-  const headers = rows[0];
-  const h = (name) => headers.findIndex(h => h.includes(name));
-  const shipIdx    = h('SHIP NAME');
-  const imoIdx     = h('IMO');
-  const projIdx    = h('프로젝트');
-  const ownerIdx   = h('SHIP OWNER');
-  const countryIdx = h('국가');
-  const typeIdx    = h("SHIP'S TYPE");
-  const specIdx    = h('SPEC');
-  const ptIdx      = h('PT');
-  const mtrIdx     = h('MTR');
-  const ttIdx      = headers.findIndex(h => h.trim() === 'TT');
-  const ttexIdx    = h('TT (EX)');
-  const uviIdx     = h('UVI');
-  const fmuIdx     = h('FMU');
-  const o25Idx     = headers.findIndex(h => h.includes('2025') && h.includes('수주') && !h.includes('금액') && !h.includes('실행'));
-  const amt25Idx   = headers.findIndex(h => h.includes('2025') && h.includes('금액'));
-  const d25Idx     = headers.findIndex(h => h.includes('2025') && h.includes('실행'));
-  const est26Idx   = headers.findIndex(h => h.includes('2026') && h.includes('견적'));
-  const o26Idx     = headers.findIndex(h => h.includes('2026') && h.includes('수주') && !h.includes('실행'));
-  const d26Idx     = headers.findIndex(h => h.includes('2026') && h.includes('실행'));
-  const svcIdx     = headers.findIndex(h => h.includes('SERVICE'));
-
-  return rows.slice(1).filter(r => r[shipIdx] && r[shipIdx].trim()).map(r => ({
-    ship:    r[shipIdx]?.trim() || '',
-    imo:     r[imoIdx]?.trim() || '',
-    project: r[projIdx]?.trim() || '',
-    owner:   (r[ownerIdx] || '').replace(/^\t/, '').trim(),
-    country: r[countryIdx]?.trim() || '',
-    type:    r[typeIdx]?.trim() || '',
-    spec:    r[specIdx]?.trim() || '',
-    pt:      r[ptIdx]?.trim() || '',
-    mtr:     r[mtrIdx]?.trim() || '',
-    tt:      r[ttIdx]?.trim() || '',
-    tt_ex:   r[ttexIdx]?.trim() || '',
-    uvi:     r[uviIdx]?.trim() || '',
-    fmu:     r[fmuIdx]?.trim() || '',
-    order25: isTrue(r[o25Idx] || ''),
-    amt25:   parseFloat((r[amt25Idx] || '').replace(/[^0-9.]/g,'')) || null,
-    date25:  (r[d25Idx] || '').replace(/\\/g,'').trim(),
-    est26:   isTrue(r[est26Idx] || ''),
-    order26: isTrue(r[o26Idx] || ''),
-    date26:  (r[d26Idx] || '').trim(),
-    svc:     (r[svcIdx] || '').trim(),
+  // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10, L=11,
+  // M=12, N=13, O=14, P=15, Q=16, R=17, S=18, T=19,
+  // U=20, V=21, W=22, X=23, Y=24, Z=25, AA=26, AB=27
+  return rows.slice(1).filter(r => r[5] && r[5].trim()).map(r => ({
+    ship:    (r[5]  || '').trim(),       // F: SHIP NAME
+    imo:     (r[3]  || '').trim(),       // D: IMO
+    project: (r[2]  || '').trim(),       // C: 프로젝트
+    owner:   (r[6]  || '').replace(/^\t/,'').trim(), // G: SHIP OWNER
+    country: (r[7]  || '').trim(),       // H: 국가
+    type:    (r[8]  || '').trim(),       // I: SHIP'S TYPE
+    spec:    (r[10] || '').trim(),       // K: SPEC (DESIGN)
+    pt:      (r[12] || '').trim(),       // M: PT
+    mtr:     (r[13] || '').trim(),       // N: MTR(PT)
+    tt:      (r[14] || '').trim(),       // O: TT
+    tt_ex:   (r[15] || '').trim(),       // P: TT(EX)
+    uvi:     (r[16] || '').trim(),       // Q: UVI
+    fmu:     (r[17] || '').trim(),       // R: FMU
+    order25: isTrue(r[20] || ''),        // U: 2025 수주
+    amt25:   parseFloat((r[21] || '').replace(/[^0-9.]/g,'')) || null, // V: 2025 수주금액
+    date25:  (r[22] || '').replace(/\\/g,'').trim(), // W: 2025 실행일자
+    est26:   isTrue(r[23] || ''),        // X: 2026 견적
+    order26: isTrue(r[24] || ''),        // Y: 2026 수주
+    date26:  (r[25] || '').trim(),       // Z: 2026 실행일자
+    svc:     (r[26] || '').trim(),       // AA: 2026 SERVICE 형태
     _t:      'BWTS'
   }));
 }
@@ -167,112 +147,46 @@ function parseSOXCsv(text) {
     country: r[countryIdx]?.trim() || '',
     type:    r[typeIdx]?.trim() || '',
     otp:     r[otpIdx]?.trim() || '',
-    tur:     parseInt(r[turIdx] || '0') || 0,
-    pah:     parseInt(r[pahIdx] || '0') || 0,
-    system:  r[sysIdx]?.trim() || '',
-    cAmt:    r[amtIdx]?.trim() || '',
-    status:  r[statusIdx]?.trim() || '',
+    tur:     parseInt(r[turIdx] || '0') || 0,      // N열
+    pah:     parseInt(r[pahIdx] || '0') || 0,      // O열
+    inTur:   r[15]?.trim() || '',                  // P열: in TUR 타입
+    inPah:   r[18]?.trim() || '',                  // S열: out PaH 타입
+    system:  r[sysIdx]?.trim() || '',              // V열
+    remark:  r[22]?.trim() || '',                  // W열
+    status:  r[statusIdx]?.trim() || '',           // X열
+    cAmt:    r[amtIdx]?.trim() || '',              // Y열
     _t:      'SCRUBBER'
   }));
 }
 
-// CSV를 2D 배열로 파싱
+// CSV를 2D 배열로 파싱 (따옴표 안 줄바꿈 처리)
 function parseCSVRows(text) {
   const rows = [];
-  const lines = text.split(/\r?\n/);
-  for (const line of lines) {
-    if (line.trim()) rows.push(parseLine(line));
+  let cur = [];
+  let cell = '';
+  let inQ = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i+1];
+
+    if (inQ) {
+      if (ch === '"' && next === '"') { cell += '"'; i++; }
+      else if (ch === '"') { inQ = false; }
+      else { cell += ch; }
+    } else {
+      if (ch === '"') { inQ = true; }
+      else if (ch === ',') { cur.push(cell.trim()); cell = ''; }
+      else if (ch === '\n') {
+        cur.push(cell.trim());
+        if (cur.some(c => c !== '')) rows.push(cur);
+        cur = []; cell = '';
+      } else if (ch === '\r') { /* skip */ }
+      else { cell += ch; }
+    }
   }
+  if (cell || cur.length) { cur.push(cell.trim()); if (cur.some(c=>c!=='')) rows.push(cur); }
   return rows;
-}
-  const lines = text.split(/\r?\n/);
-  const bwtsRows = [];
-  const soxRows  = [];
-  let mode = null;
-  let bwtsHeaders = null;
-  let soxHeaders  = null;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const cols = parseLine(line);
-    const first = (cols[0] || '').trim();
-    const joined = cols.join('|').toLowerCase();
-
-    // BWTS 헤더 감지: 'No.' 또는 'SHIP NAME' 포함
-    if (!bwtsHeaders && joined.includes('ship name') && joined.includes('ship owner') && joined.includes('spec')) {
-      bwtsHeaders = cols.map(c => c.trim());
-      mode = 'bwts';
-      continue;
-    }
-
-    // SOX 헤더 감지: 'OTP DATE' 포함
-    if (joined.includes('otp date') && joined.includes('ship name')) {
-      soxHeaders = cols.map(c => c.trim());
-      mode = 'sox';
-      continue;
-    }
-
-    // MRO계약 헤더 감지: '계약기간' 포함 → 수집 중단
-    if (joined.includes('계약기간') && joined.includes('계약금액')) {
-      mode = null;
-      continue;
-    }
-
-    if (mode === 'bwts' && bwtsHeaders) {
-      const obj = {};
-      bwtsHeaders.forEach((h, idx) => { obj[h] = (cols[idx] || '').trim(); });
-      const ship = obj['SHIP NAME'] || '';
-      if (ship && ship !== 'SHIP NAME') bwtsRows.push(obj);
-    } else if (mode === 'sox' && soxHeaders) {
-      const obj = {};
-      soxHeaders.forEach((h, idx) => { obj[h] = (cols[idx] || '').trim(); });
-      const ship = obj['SHIP NAME'] || '';
-      if (ship && ship !== 'SHIP NAME') soxRows.push(obj);
-    }
-  }
-
-  return {
-    bwts: bwtsRows.map(r => ({
-      ship:    r['SHIP NAME'] || '',
-      imo:     r['IMO'] || '',
-      project: r['프로젝트'] || '',
-      owner:   (r['SHIP OWNER'] || '').replace(/^\t/, '').trim(),
-      country: r['국가'] || '',
-      type:    r["SHIP'S TYPE"] || '',
-      spec:    r['SPEC (DESIGN)'] || '',
-      pt:      r['PT'] || '',
-      mtr:     r['MTR\n(PT)'] || r['MTR(PT)'] || '',
-      tt:      r['TT'] || '',
-      tt_ex:   r['TT (EX)'] || '',
-      uvi:     r['UVI'] || '',
-      fmu:     r['FMU'] || '',
-      order25: isTrue(r['2025\n수주'] || r['2025 수주'] || ''),
-      amt25:   parseFloat((r['2025\n수주 금액'] || r['2025 수주 금액'] || '').replace(/[^0-9.]/g,'')) || null,
-      date25:  (r['2025\n실행일자'] || r['2025 실행일자'] || '').replace(/\\/g, ''),
-      est26:   isTrue(r['2026\n견적'] || r['2026 견적'] || ''),
-      order26: isTrue(r['2026\n수주'] || r['2026 수주'] || ''),
-      date26:  r['2026\n실행일자'] || r['2026 실행일자'] || '',
-      svc:     r['2026\n SERVICE 형태'] || r['2026 SERVICE 형태'] || '',
-      _t:      'BWTS'
-    })),
-    sox: soxRows.map(r => ({
-      ship:    r['SHIP NAME'] || '',
-      imo:     r['IMO NO.'] || r['IMO'] || '',
-      project: r['PROJECT (HULL NO.)'] || '',
-      owner:   (r['SHIP OWNER'] || '').replace(/^\t/, '').trim(),
-      country: r['국가'] || '',
-      type:    r["SHIP'S TYPE"] || '',
-      otp:     r['OTP DATE'] || '',
-      tur:     parseInt(r['TUR'] || '0') || 0,
-      pah:     parseInt(r['PaH'] || '0') || 0,
-      system:  r['SYSTEM'] || '',
-      cAmt:    r['계약금액(Y열)'] || '',
-      status:  r['계약STATUS(Z열)'] || '',
-      _t:      'SCRUBBER'
-    }))
-  };
 }
 
 function showPage(id, el) {
@@ -404,31 +318,33 @@ function calcReminder() {
 }
 
 function openReminderModal() {
-  const today = new Date();
+  // 2025 승선일 오름차순 정렬
+  const sorted = [...reminderVessels].sort((a, b) => {
+    const da = parseDate25(a.date25);
+    const db = parseDate25(b.date25);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da - db;
+  });
   document.getElementById('reminderModalTitle').textContent =
-    `재계약 컨택 필요 호선 (${reminderVessels.length}척)`;
-  document.getElementById('reminderTableBody').innerHTML = reminderVessels.map((r, idx) => {
-    const d = parseDate25(r.date25);
-    const diff = d ? Math.floor((today - d)/(1000*60*60*24)) : '-';
+    `재계약 컨택 필요 호선 (${sorted.length}척)`;
+  document.getElementById('reminderTableBody').innerHTML = sorted.map((r, idx) => {
     return `<tr style="border-bottom:1px solid #f0f2f7" onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background=''">
       <td style="padding:11px 12px;font-weight:700;color:#0d1b3e">${r.ship}</td>
       <td style="padding:11px 12px;font-size:12px;color:#5a6480">${r.owner}</td>
       <td style="padding:11px 12px;font-size:12px;color:#5a6480">${r.date25||'-'}</td>
       <td style="padding:11px 12px;text-align:center">
-        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${diff>=365?'#fee2e2':'#fef3c7'};color:${diff>=365?'#b91c1c':'#92400e'}">${diff}일</span>
-      </td>
-      <td style="padding:11px 12px;text-align:center">
-        <button onclick="openReminderDetail(${idx})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #d9dff0;background:none;cursor:pointer;font-size:12px;color:#7a85a3;font-weight:700;font-family:inherit" title="상세보기">i</button>
+        <button onclick="openReminderDetail(${idx}, ${JSON.stringify(sorted).replace(/"/g,'&quot;')})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #d9dff0;background:none;cursor:pointer;font-size:12px;color:#7a85a3;font-weight:700;font-family:inherit" title="상세보기">i</button>
       </td>
     </tr>`;
   }).join('');
   document.getElementById('reminderOverlay').classList.add('open');
 }
 
-function openReminderDetail(idx) {
-  const r = reminderVessels[idx];
-  // 기존 선박 상세 모달 재활용
-  curData = reminderVessels.map(v=>({...v,_t:'BWTS'}));
+function openReminderDetail(idx, sortedJson) {
+  const sorted = sortedJson ? JSON.parse(sortedJson.replace(/&quot;/g,'"')) : reminderVessels;
+  curData = sorted.map(v=>({...v,_t:'BWTS'}));
   document.getElementById('reminderOverlay').classList.remove('open');
   openModal(idx);
 }
@@ -452,15 +368,23 @@ function allData() {
 
 function doSearch() {
   const q = (document.getElementById('sInput').value||'').toLowerCase().trim();
+  if (!q) {
+    // 검색어 없으면 빈 상태
+    curData = [];
+    document.getElementById('rCount').textContent = '0';
+    document.getElementById('rFooter').textContent = '검색어를 입력해주세요.';
+    document.getElementById('rTb').innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:#9ba3bc;font-size:13px">선명, IMO, 선주사를 검색하세요</td></tr>`;
+    return;
+  }
   const all = allData();
-  curData = q ? all.filter(r =>
+  curData = all.filter(r =>
     (r.ship||'').toLowerCase().includes(q)||
     (r.imo||'').toLowerCase().includes(q)||
     (r.owner||'').toLowerCase().includes(q)||
     (r.project||'').toLowerCase().includes(q)||
     (r.type||'').toLowerCase().includes(q)||
     (r.country||'').toLowerCase().includes(q)
-  ) : all;
+  );
   renderRTable(curData);
 }
 
@@ -493,61 +417,103 @@ function openModal(idx) {
   if (!r) return;
   const ib = r._t==='BWTS';
   document.getElementById('mTitle').textContent = r.ship;
-  document.getElementById('mBody').innerHTML = `
-    <div class="m-section">
-      <h3>선박 정보</h3>
-      <div class="m-grid">
-        <div class="m-item"><label>IMO</label><span>${r.imo||'-'}</span></div>
-        <div class="m-item"><label>선명</label><span>${r.ship}</span></div>
-        <div class="m-item ${ib?'':'full'}"><label>프로젝트</label><span>${r.project||r.system||'-'}</span></div>
-        ${ib?`<div class="m-item"><label>용량 / SPEC</label><span>${r.spec||'-'}</span></div>`:''}
-        <div class="m-item"><label>선종</label><span>${r.type||'-'}</span></div>
-        <div class="m-item"><label>유형</label><span><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></span></div>
+
+  if (ib) {
+    // BWTS 레이아웃
+    const est25 = r.order25 ? '✅ 견적' : '—';
+    const ord25 = r.order25 ? '✅ 수주' : '—';
+    const est26 = r.est26   ? '✅ 견적' : '—';
+    const ord26 = r.order26 ? '✅ 수주' : '—';
+    document.getElementById('mBody').innerHTML = `
+      <div class="m-section">
+        <h3>선박 정보</h3>
+        <div class="m-grid">
+          <div class="m-item"><label>IMO</label><span>${r.imo||'-'}</span></div>
+          <div class="m-item"><label>유형</label><span><span class="type-badge tb-bwts">BWTS</span></span></div>
+          <div class="m-item"><label>선명</label><span style="font-weight:700">${r.ship}</span></div>
+          <div class="m-item"><label>프로젝트</label><span>${r.project||'-'}</span></div>
+          <div class="m-item"><label>용량 / SPEC</label><span>${r.spec||'-'}</span></div>
+          <div class="m-item"><label>선종</label><span>${r.type||'-'}</span></div>
+        </div>
       </div>
-    </div>
-    <div class="m-section">
-      <h3>선주사 정보</h3>
-      <div class="m-grid">
-        <div class="m-item"><label>선주사</label><span>${r.owner}</span></div>
-        <div class="m-item"><label>국가</label><span>${r.country}</span></div>
+      <div class="m-section">
+        <h3>선주사 정보</h3>
+        <div class="m-grid">
+          <div class="m-item full"><label>선주사</label><span style="font-weight:600">${r.owner||'-'}</span></div>
+          <div class="m-item full"><label>국가</label><span>${r.country||'-'}</span></div>
+        </div>
       </div>
-    </div>
-    ${ib?`
-    <div class="m-section">
-      <h3>센서 / 스펙</h3>
-      <div class="spec-grid">
-        <div class="spec-box"><label>PT</label><span>${r.pt||'-'}</span></div>
-        <div class="spec-box"><label>MTR(PT)</label><span>${r.mtr||'-'}</span></div>
-        <div class="spec-box"><label>TT</label><span>${r.tt||'-'}</span></div>
-        <div class="spec-box"><label>TT(EX)</label><span>${r.tt_ex||'-'}</span></div>
-        <div class="spec-box"><label>UVI</label><span>${r.uvi||'-'}</span></div>
-        <div class="spec-box"><label>FMU</label><span>${r.fmu||'-'}</span></div>
+      <div class="m-section">
+        <h3>센서 / 스펙</h3>
+        <div class="m-grid">
+          <div class="m-item"><label>PT</label><span>${r.pt||'-'}</span></div>
+          <div class="m-item"><label>PT 센서 미터수</label><span>${r.mtr ? r.mtr+'MTR' : '-'}</span></div>
+          <div class="m-item"><label>TT SENSOR</label><span>${r.tt||'-'}</span></div>
+          <div class="m-item"><label>TT (EX)</label><span>${r.tt_ex||'-'}</span></div>
+          <div class="m-item"><label>UVI</label><span>${r.uvi||'-'}</span></div>
+          <div class="m-item"><label>FMU</label><span>${r.fmu||'-'}</span></div>
+        </div>
       </div>
-    </div>
-    <div class="m-section">
-      <h3>수주 현황</h3>
-      <div class="m-grid">
-        <div class="m-item"><label>2025 수주</label><span>${r.order25?'✅ 수주확정':'—'}</span></div>
-        <div class="m-item"><label>2025 실행일</label><span>${r.date25||'-'}</span></div>
-        <div class="m-item"><label>2026 견적</label><span>${r.est26?'✅ 견적확보':'—'}</span></div>
-        <div class="m-item"><label>2026 수주</label><span>${r.order26?'✅ 수주확정':'—'}</span></div>
-        <div class="m-item"><label>서비스 형태</label><span>${r.svc||'-'}</span></div>
-        <div class="m-item"><label>2026 일정</label><span>${r.date26||'-'}</span></div>
-        ${r.amt25?`<div class="m-item full"><label>2025 수주금액</label><span style="font-size:16px;font-weight:800;color:#1e6fd9">USD ${r.amt25.toLocaleString()}</span></div>`:''}
+      <div class="m-section">
+        <h3>수주 현황</h3>
+        <div style="background:#f6f8fc;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:#1e6fd9;margin-bottom:8px">2025년</div>
+          <div class="m-grid">
+            <div class="m-item"><label>견적</label><span>${est25}</span></div>
+            <div class="m-item"><label>수주</label><span>${ord25}</span></div>
+            <div class="m-item full"><label>실행일</label><span>${r.date25||'-'}</span></div>
+          </div>
+        </div>
+        <div style="background:#f6f8fc;border-radius:10px;padding:12px 14px">
+          <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:8px">2026년</div>
+          <div class="m-grid">
+            <div class="m-item"><label>견적</label><span>${est26}</span></div>
+            <div class="m-item"><label>수주</label><span>${ord26}</span></div>
+            <div class="m-item"><label>실행일</label><span>${r.date26||'-'}</span></div>
+            <div class="m-item"><label>서비스 형태</label><span>${r.svc||'-'}</span></div>
+          </div>
+        </div>
+        ${r.amt25?`<div style="margin-top:10px;padding:10px 14px;background:#e8f0fd;border-radius:10px"><label style="font-size:11px;color:#1e6fd9;font-weight:700">2025 수주금액</label><div style="font-size:18px;font-weight:800;color:#1e6fd9;margin-top:3px">USD ${Number(r.amt25).toLocaleString()}</div></div>`:''}
+      </div>`;
+  } else {
+    // SOX SCRUBBER 레이아웃
+    const statusColor = r.status==='계약유효'?'#10b981':r.status==='계약파기'?'#ef4444':'#f59e0b';
+    document.getElementById('mBody').innerHTML = `
+      <div class="m-section">
+        <h3>선박 정보</h3>
+        <div class="m-grid">
+          <div class="m-item"><label>IMO</label><span>${r.imo||'-'}</span></div>
+          <div class="m-item"><label>유형</label><span><span class="type-badge tb-sox">SCRUBBER</span></span></div>
+          <div class="m-item"><label>선명</label><span style="font-weight:700">${r.ship}</span></div>
+          <div class="m-item"><label>프로젝트</label><span>${r.project||'-'}</span></div>
+          <div class="m-item"><label>시스템</label><span>${r.system||'-'}</span></div>
+          <div class="m-item"><label>선종</label><span>${r.type||'-'}</span></div>
+        </div>
       </div>
-    </div>`:
-    `<div class="m-section">
-      <h3>SOX Scrubber 정보</h3>
-      <div class="m-grid">
-        <div class="m-item"><label>센서 시스템</label><span>${r.system||'-'}</span></div>
-        <div class="m-item"><label>OTP DATE</label><span>${r.otp||'-'}</span></div>
-        <div class="m-item"><label>TUR 수량</label><span>${r.tur||'-'}</span></div>
-        <div class="m-item"><label>PaH 수량</label><span>${r.pah||'-'}</span></div>
-        <div class="m-item"><label>계약금액</label><span>${r.cAmt||'-'}</span></div>
-        <div class="m-item"><label>계약 상태</label><span style="font-weight:700;color:${r.status==='계약유효'?'#10b981':r.status==='계약파기'?'#ef4444':'#f59e0b'}">${r.status||'-'}</span></div>
+      <div class="m-section">
+        <h3>선주사 정보</h3>
+        <div class="m-grid">
+          <div class="m-item full"><label>선주사</label><span style="font-weight:600">${r.owner||'-'}</span></div>
+          <div class="m-item full"><label>국가</label><span>${r.country||'-'}</span></div>
+        </div>
       </div>
-    </div>`}
-  `;
+      <div class="m-section">
+        <h3>SOX Scrubber 정보</h3>
+        <div class="m-grid">
+          <div class="m-item full"><label>OTP DATE</label><span>${r.otp||'-'}</span></div>
+          <div class="m-item"><label>TUR SENSOR</label><span>${r.inTur||'-'} × ${r.tur||'-'} EA</span></div>
+          <div class="m-item"><label>PAH SENSOR</label><span>${r.inPah||'-'} × ${r.pah||'-'} EA</span></div>
+        </div>
+      </div>
+      <div class="m-section">
+        <h3>수주 현황</h3>
+        <div class="m-grid">
+          <div class="m-item full"><label>계약 STATUS</label><span style="font-weight:700;color:${statusColor}">${r.status||'-'}</span></div>
+          <div class="m-item full"><label>계약 금액</label><span style="font-weight:700">${r.cAmt||'-'}</span></div>
+          ${r.remark?`<div class="m-item full"><label>계약 REMARK</label><span style="font-size:12px;color:#5a6480">${r.remark}</span></div>`:''}
+        </div>
+      </div>`;
+  }
   document.getElementById('mOverlay').classList.add('open');
 }
 function closeMo(e){if(e.target===document.getElementById('mOverlay'))closeMoDirect();}
