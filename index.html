@@ -512,55 +512,6 @@ function isTrue(v) {
   return v === 'TRUE' || v === 'true' || v === '1' || v === 'Y' || v === 'y';
 }
 
-function parseBWTS(rows) {
-  return rows.filter(r => {
-    const ship = r['SHIP NAME'] || '';
-    return ship && ship !== 'SHIP NAME' && ship.trim() !== '';
-  }).map(r => ({
-    ship:    (r['SHIP NAME'] || '').trim(),
-    imo:     (r['IMO'] || '').trim(),
-    project: (r['프로젝트'] || '').trim(),
-    owner:   (r['SHIP OWNER'] || '').trim(),
-    country: (r['국가'] || '').trim(),
-    type:    (r["SHIP'S TYPE"] || '').trim(),
-    spec:    (r['SPEC (DESIGN)'] || '').trim(),
-    pt:      (r['PT'] || '').trim(),
-    mtr:     (r['MTR\n(PT)'] || r['MTR(PT)'] || '').trim(),
-    tt:      (r['TT'] || '').trim(),
-    tt_ex:   (r['TT (EX)'] || '').trim(),
-    uvi:     (r['UVI'] || '').trim(),
-    fmu:     (r['FMU'] || '').trim(),
-    order25: isTrue(r['2025\n수주'] || r['2025 수주'] || ''),
-    amt25:   parseFloat((r['2025\n수주 금액'] || r['2025 수주 금액'] || '').replace(/[^0-9.]/g,'')) || null,
-    date25:  (r['2025\n실행일자'] || r['2025 실행일자'] || '').trim(),
-    est26:   isTrue(r['2026\n견적'] || r['2026 견적'] || ''),
-    order26: isTrue(r['2026\n수주'] || r['2026 수주'] || ''),
-    date26:  (r['2026\n실행일자'] || r['2026 실행일자'] || '').trim(),
-    svc:     (r['2026\n SERVICE 형태'] || r['2026 SERVICE 형태'] || '').trim(),
-    _t:      'BWTS'
-  }));
-}
-
-function parseSOX(rows) {
-  return rows.filter(r => {
-    const ship = r['SHIP NAME'] || '';
-    return ship && ship.trim() !== '' && ship !== 'SHIP NAME';
-  }).map(r => ({
-    ship:    (r['SHIP NAME'] || '').trim(),
-    imo:     (r['IMO NO.'] || r['IMO'] || '').trim(),
-    project: (r['PROJECT (HULL NO.)'] || '').trim(),
-    owner:   (r['SHIP OWNER'] || '').trim(),
-    country: (r['국가'] || '').trim(),
-    type:    (r["SHIP'S TYPE"] || '').trim(),
-    otp:     (r['OTP DATE'] || '').trim(),
-    tur:     parseInt(r['TUR'] || '0') || 0,
-    pah:     parseInt(r['PaH'] || '0') || 0,
-    system:  (r['SYSTEM'] || '').trim(),
-    cAmt:    (r['계약금액(Y열)'] || '').trim(),
-    status:  (r['계약STATUS(Z열)'] || '').trim(),
-    _t:      'SCRUBBER'
-  }));
-}
 
 // 로딩 UI
 function showLoading() {
@@ -583,13 +534,10 @@ async function loadData() {
   showLoading();
   document.getElementById('lastUpdated').textContent = '불러오는 중...';
   try {
-    // BWTS 시트
-    const [r1, r2] = await Promise.all([
-      fetch(csvUrl(BWTS_GID)).then(r => r.text()),
-      fetch(csvUrl(SOX_GID)).then(r => r.text()),
-    ]);
-    BWTS = parseBWTS(parseCSV(r1));
-    SOX  = parseSOX(parseCSV(r2));
+    const csv = await fetch(csvUrl(BWTS_GID)).then(r => r.text());
+    const {bwts, sox} = parseSheetSections(csv);
+    BWTS = bwts;
+    SOX  = sox;
 
     const now = new Date();
     document.getElementById('lastUpdated').textContent =
@@ -603,6 +551,98 @@ async function loadData() {
   } catch(e) {
     showError('Google Sheets에 접근할 수 없습니다.<br>' + e.message);
   }
+}
+
+// 하나의 CSV에서 BWTS / SOX 섹션 분리 파싱
+function parseSheetSections(text) {
+  const lines = text.split(/\r?\n/);
+  const bwtsRows = [];
+  const soxRows  = [];
+  let mode = null;
+  let bwtsHeaders = null;
+  let soxHeaders  = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const cols = parseLine(line);
+    const first = (cols[0] || '').trim();
+    const joined = cols.join('|').toLowerCase();
+
+    // BWTS 헤더 감지: 'No.' 또는 'SHIP NAME' 포함
+    if (!bwtsHeaders && joined.includes('ship name') && joined.includes('ship owner') && joined.includes('spec')) {
+      bwtsHeaders = cols.map(c => c.trim());
+      mode = 'bwts';
+      continue;
+    }
+
+    // SOX 헤더 감지: 'OTP DATE' 포함
+    if (joined.includes('otp date') && joined.includes('ship name')) {
+      soxHeaders = cols.map(c => c.trim());
+      mode = 'sox';
+      continue;
+    }
+
+    // MRO계약 헤더 감지: '계약기간' 포함 → 수집 중단
+    if (joined.includes('계약기간') && joined.includes('계약금액')) {
+      mode = null;
+      continue;
+    }
+
+    if (mode === 'bwts' && bwtsHeaders) {
+      const obj = {};
+      bwtsHeaders.forEach((h, idx) => { obj[h] = (cols[idx] || '').trim(); });
+      const ship = obj['SHIP NAME'] || '';
+      if (ship && ship !== 'SHIP NAME') bwtsRows.push(obj);
+    } else if (mode === 'sox' && soxHeaders) {
+      const obj = {};
+      soxHeaders.forEach((h, idx) => { obj[h] = (cols[idx] || '').trim(); });
+      const ship = obj['SHIP NAME'] || '';
+      if (ship && ship !== 'SHIP NAME') soxRows.push(obj);
+    }
+  }
+
+  return {
+    bwts: bwtsRows.map(r => ({
+      ship:    r['SHIP NAME'] || '',
+      imo:     r['IMO'] || '',
+      project: r['프로젝트'] || '',
+      owner:   (r['SHIP OWNER'] || '').replace(/^\t/, '').trim(),
+      country: r['국가'] || '',
+      type:    r["SHIP'S TYPE"] || '',
+      spec:    r['SPEC (DESIGN)'] || '',
+      pt:      r['PT'] || '',
+      mtr:     r['MTR\n(PT)'] || r['MTR(PT)'] || '',
+      tt:      r['TT'] || '',
+      tt_ex:   r['TT (EX)'] || '',
+      uvi:     r['UVI'] || '',
+      fmu:     r['FMU'] || '',
+      order25: isTrue(r['2025\n수주'] || r['2025 수주'] || ''),
+      amt25:   parseFloat((r['2025\n수주 금액'] || r['2025 수주 금액'] || '').replace(/[^0-9.]/g,'')) || null,
+      date25:  (r['2025\n실행일자'] || r['2025 실행일자'] || '').replace(/\\/g, ''),
+      est26:   isTrue(r['2026\n견적'] || r['2026 견적'] || ''),
+      order26: isTrue(r['2026\n수주'] || r['2026 수주'] || ''),
+      date26:  r['2026\n실행일자'] || r['2026 실행일자'] || '',
+      svc:     r['2026\n SERVICE 형태'] || r['2026 SERVICE 형태'] || '',
+      _t:      'BWTS'
+    })),
+    sox: soxRows.map(r => ({
+      ship:    r['SHIP NAME'] || '',
+      imo:     r['IMO NO.'] || r['IMO'] || '',
+      project: r['PROJECT (HULL NO.)'] || '',
+      owner:   (r['SHIP OWNER'] || '').replace(/^\t/, '').trim(),
+      country: r['국가'] || '',
+      type:    r["SHIP'S TYPE"] || '',
+      otp:     r['OTP DATE'] || '',
+      tur:     parseInt(r['TUR'] || '0') || 0,
+      pah:     parseInt(r['PaH'] || '0') || 0,
+      system:  r['SYSTEM'] || '',
+      cAmt:    r['계약금액(Y열)'] || '',
+      status:  r['계약STATUS(Z열)'] || '',
+      _t:      'SCRUBBER'
+    }))
+  };
 }
 
 function showPage(id, el) {
@@ -953,28 +993,4 @@ function selC(val){
         </div>
         <div class="vessel-mini-list" id="vl-${o.owner.replace(/[^a-zA-Z0-9]/g,'_')}">
           ${[...o.bwts.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-bwts" style="font-size:10px">${v.order25?'2025수주':'견적'}</span></div>`),
-             ...o.sox.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-sox" style="font-size:10px">${v.status||'SOX'}</span></div>`)].join('')}
-        </div>
-      </div>`).join('')||'<p style="color:#9ba3bc;font-size:13px;grid-column:1/-1">해당 국가의 데이터가 없습니다.</p>';
-    document.getElementById('dVessels').innerHTML='';
-  } else {
-    document.getElementById('oCards').innerHTML='';
-    const all=[...bF.map(r=>({...r,_t:'BWTS'})),...sF.map(r=>({...r,_t:'SOX'}))];
-    document.getElementById('dVessels').innerHTML=all.map(v=>`
-      <div class="v-row">
-        <span><span class="type-badge ${v._t==='BWTS'?'tb-bwts':'tb-sox'}" style="margin-right:8px">${v._t}</span><b>${v.ship}</b><span style="font-size:11px;color:#9ba3bc;margin-left:6px">${v.imo||''}</span></span>
-        <span style="font-size:11px;color:#5a6480">${v._t==='BWTS'?(v.order25?'2025 수주':'견적'):(v.status||'-')}</span>
-      </div>`).join('')||'<p style="color:#9ba3bc;font-size:13px">해당 선주사의 데이터가 없습니다.</p>';
-  }
-}
-
-function toggleVL(owner){
-  const el=document.getElementById('vl-'+owner.replace(/[^a-zA-Z0-9]/g,'_'));
-  if(el) el.style.display=el.style.display==='block'?'none':'block';
-}
-
-// ======================== INIT ========================
-loadData();
-</script>
-</body>
-</html>
+             ...o.sox.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-sox" style="font-size:10px">${v.status||'SOX'}</span></div>`
