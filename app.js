@@ -2,7 +2,8 @@
 // ======================== CONFIG ========================
 const SHEET_ID = '13mvFbhAR_RJ95mt-HQy_lC_q9AmI0NIdEbo1XJvcZPc';
 const PUBLISHED_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvMVvK8k2eUjR9zz9ojWf8e4h_9G_N3UFIufxnWk1y-Mbb87MfAg5aSHqFx22-9UDsaJk458ihRBjq/pub';
-const BWTS_GID = '0';
+const BWTS_GID = '695648690';
+const SOX_GID = '0';
 
 function csvUrl(gid) {
   return `${PUBLISHED_BASE}?output=csv&gid=${gid}`;
@@ -63,17 +64,14 @@ async function loadData() {
   showLoading();
   document.getElementById('lastUpdated').textContent = '불러오는 중...';
   try {
-    const url = csvUrl(BWTS_GID);
-    console.log('Fetching URL:', url);
-    const response = await fetch(url);
-    console.log('Response status:', response.status, response.statusText);
-    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    const csv = await response.text();
-    console.log('CSV 길이:', csv.length, '첫 100자:', csv.slice(0,100));
-    const {bwts, sox} = parseSheetSections(csv);
-    console.log('BWTS 파싱:', bwts.length, '척 / SOX 파싱:', sox.length, '척');
-    BWTS = bwts;
-    SOX  = sox;
+    const [csvBwts, csvSox] = await Promise.all([
+      fetch(csvUrl(BWTS_GID)).then(r => { if(!r.ok) throw new Error('BWTS fetch 실패: ' + r.status); return r.text(); }),
+      fetch(csvUrl(SOX_GID)).then(r => { if(!r.ok) throw new Error('SOX fetch 실패: ' + r.status); return r.text(); })
+    ]);
+    console.log('BWTS CSV 길이:', csvBwts.length, 'SOX CSV 길이:', csvSox.length);
+    BWTS = parseBWTSCsv(csvBwts);
+    SOX  = parseSOXCsv(csvSox);
+    console.log('BWTS 파싱:', BWTS.length, '척 / SOX 파싱:', SOX.length, '척');
 
     const now = new Date();
     document.getElementById('lastUpdated').textContent =
@@ -90,8 +88,103 @@ async function loadData() {
   }
 }
 
-// 하나의 CSV에서 BWTS / SOX 섹션 분리 파싱
-function parseSheetSections(text) {
+// BWTS 시트 파싱 - 열 인덱스 직접 지정
+function parseBWTSCsv(text) {
+  const rows = parseCSVRows(text);
+  if (rows.length < 2) return [];
+  // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10, L=11,
+  // M=12, N=13, O=14, P=15, Q=16, R=17, S=18, T=19,
+  // U=20, V=21, W=22, X=23, Y=24, Z=25, AA=26, AB=27
+  return rows.slice(1).filter(r => r[5] && r[5].trim()).map(r => ({
+    ship:    (r[5]  || '').trim(),       // F: SHIP NAME
+    imo:     (r[3]  || '').trim(),       // D: IMO
+    project: (r[2]  || '').trim(),       // C: 프로젝트
+    owner:   (r[6]  || '').replace(/^\t/,'').trim(), // G: SHIP OWNER
+    country: (r[7]  || '').trim(),       // H: 국가
+    type:    (r[8]  || '').trim(),       // I: SHIP'S TYPE
+    spec:    (r[10] || '').trim(),       // K: SPEC (DESIGN)
+    pt:      (r[12] || '').trim(),       // M: PT
+    mtr:     (r[13] || '').trim(),       // N: MTR(PT)
+    tt:      (r[14] || '').trim(),       // O: TT
+    tt_ex:   (r[15] || '').trim(),       // P: TT(EX)
+    uvi:     (r[16] || '').trim(),       // Q: UVI
+    fmu:     (r[17] || '').trim(),       // R: FMU
+    order25: isTrue(r[20] || ''),        // U: 2025 수주
+    amt25:   parseFloat((r[21] || '').replace(/[^0-9.]/g,'')) || null, // V: 2025 수주금액
+    date25:  (r[22] || '').replace(/\\/g,'').trim(), // W: 2025 실행일자
+    est26:   isTrue(r[23] || ''),        // X: 2026 견적
+    order26: isTrue(r[24] || ''),        // Y: 2026 수주
+    date26:  (r[25] || '').trim(),       // Z: 2026 실행일자
+    svc:     (r[26] || '').trim(),       // AA: 2026 SERVICE 형태
+    _t:      'BWTS'
+  }));
+}
+
+// SOX 시트 파싱
+function parseSOXCsv(text) {
+  const rows = parseCSVRows(text);
+  if (rows.length < 2) return [];
+  const headers = rows[0];
+  const h = (name) => headers.findIndex(h => h.includes(name));
+  const shipIdx    = h('SHIP NAME');
+  const imoIdx     = headers.findIndex(h => h.includes('IMO'));
+  const projIdx    = headers.findIndex(h => h.includes('PROJECT') || h.includes('HULL'));
+  const ownerIdx   = h('SHIP OWNER');
+  const countryIdx = h('국가');
+  const typeIdx    = h("SHIP'S TYPE");
+  const otpIdx     = h('OTP');
+  const turIdx     = h('TUR');
+  const pahIdx     = h('PaH');
+  const sysIdx     = h('SYSTEM');
+  const amtIdx     = headers.findIndex(h => h.includes('계약금액'));
+  const statusIdx  = headers.findIndex(h => h.includes('계약STATUS') || (h.includes('계약') && h.includes('STATUS')));
+
+  return rows.slice(1).filter(r => r[shipIdx] && r[shipIdx].trim() && r[shipIdx].trim() !== '-').map(r => ({
+    ship:    r[shipIdx]?.trim() || '',
+    imo:     r[imoIdx]?.trim() || '',
+    project: r[projIdx]?.trim() || '',
+    owner:   (r[ownerIdx] || '').replace(/^\t/, '').trim(),
+    country: r[countryIdx]?.trim() || '',
+    type:    r[typeIdx]?.trim() || '',
+    otp:     r[otpIdx]?.trim() || '',
+    tur:     parseInt(r[turIdx] || '0') || 0,
+    pah:     parseInt(r[pahIdx] || '0') || 0,
+    system:  r[sysIdx]?.trim() || '',
+    cAmt:    r[amtIdx]?.trim() || '',
+    status:  r[statusIdx]?.trim() || '',
+    _t:      'SCRUBBER'
+  }));
+}
+
+// CSV를 2D 배열로 파싱 (따옴표 안 줄바꿈 처리)
+function parseCSVRows(text) {
+  const rows = [];
+  let cur = [];
+  let cell = '';
+  let inQ = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i+1];
+
+    if (inQ) {
+      if (ch === '"' && next === '"') { cell += '"'; i++; }
+      else if (ch === '"') { inQ = false; }
+      else { cell += ch; }
+    } else {
+      if (ch === '"') { inQ = true; }
+      else if (ch === ',') { cur.push(cell.trim()); cell = ''; }
+      else if (ch === '\n') {
+        cur.push(cell.trim());
+        if (cur.some(c => c !== '')) rows.push(cur);
+        cur = []; cell = '';
+      } else if (ch === '\r') { /* skip */ }
+      else { cell += ch; }
+    }
+  }
+  if (cell || cur.length) { cur.push(cell.trim()); if (cur.some(c=>c!=='')) rows.push(cur); }
+  return rows;
+}
   const lines = text.split(/\r?\n/);
   const bwtsRows = [];
   const soxRows  = [];
