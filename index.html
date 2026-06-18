@@ -699,6 +699,12 @@ let reminderVessels = [];
 
 function calcReminder() {
   const today = new Date();
+
+  // 디버깅: 2025 수주 있는 선박들 확인
+  const has25 = BWTS.filter(r=>r.order25);
+  console.log('2025 수주 선박 수:', has25.length);
+  console.log('샘플 date25:', has25.slice(0,3).map(r=>({ship:r.ship, date25:r.date25, est26:r.est26})));
+
   reminderVessels = BWTS.filter(r => {
     if(!r.order25) return false;
     if(r.est26)    return false;
@@ -707,6 +713,16 @@ function calcReminder() {
     const diff = Math.floor((today - d) / (1000*60*60*24));
     return diff >= 330;
   });
+
+  console.log('리마인더 대상:', reminderVessels.length, '척');
+  console.log('330일 미달로 제외된 것들:', BWTS.filter(r=>{
+    if(!r.order25||r.est26) return false;
+    const d = parseDate25(r.date25);
+    if(!d) return false;
+    const diff = Math.floor((today-d)/(1000*60*60*24));
+    return diff < 330;
+  }).map(r=>({ship:r.ship,date25:r.date25,diff:Math.floor((today-parseDate25(r.date25))/(1000*60*60*24))})));
+
   const banner = document.getElementById('reminderBanner');
   const btn    = document.getElementById('reminderBtn');
   if(reminderVessels.length > 0) {
