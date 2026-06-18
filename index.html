@@ -473,6 +473,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 // ======================== CONFIG ========================
 const SHEET_ID = '13mvFbhAR_RJ95mt-HQy_lC_q9AmI0NIdEbo1XJvcZPc';
 const PUBLISHED_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRvMVvK8k2eUjR9zz9ojWf8e4h_9G_N3UFIufxnWk1y-Mbb87MfAg5aSHqFx22-9UDsaJk458ihRBjq/pub';
+const BWTS_GID = '0';
 
 function csvUrl(gid) {
   return `${PUBLISHED_BASE}?output=csv&gid=${gid}`;
@@ -1012,4 +1013,6 @@ function toggleVL(owner){
   if(el) el.style.display=el.style.display==='block'?'none':'block';
 }
 
-// ======================== I
+// ======================== INIT ========================
+loadData();
+</sc
