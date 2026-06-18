@@ -550,8 +550,11 @@ async function loadData() {
 
     hideLoading();
     initDash();
-    curData = allData();
-    renderRTable(curData);
+    curData = [];
+    // 검색탭 초기 빈 상태
+    document.getElementById('rCount').textContent = '0';
+    document.getElementById('rFooter').textContent = '검색어를 입력해주세요.';
+    document.getElementById('rTb').innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:#9ba3bc;font-size:13px">선명, IMO, 선주사를 검색하세요</td></tr>`;
     renderCGrid('');
   } catch(e) {
     console.error('loadData 에러:', e);
@@ -788,9 +791,10 @@ function calcReminder() {
   }
 }
 
+let _reminderSorted = [];
+
 function openReminderModal() {
-  // 2025 승선일 오름차순 정렬
-  const sorted = [...reminderVessels].sort((a, b) => {
+  _reminderSorted = [...reminderVessels].sort((a, b) => {
     const da = parseDate25(a.date25);
     const db = parseDate25(b.date25);
     if (!da && !db) return 0;
@@ -799,23 +803,22 @@ function openReminderModal() {
     return da - db;
   });
   document.getElementById('reminderModalTitle').textContent =
-    `재계약 컨택 필요 호선 (${sorted.length}척)`;
-  document.getElementById('reminderTableBody').innerHTML = sorted.map((r, idx) => {
+    `재계약 컨택 필요 호선 (${_reminderSorted.length}척)`;
+  document.getElementById('reminderTableBody').innerHTML = _reminderSorted.map((r, idx) => {
     return `<tr style="border-bottom:1px solid #f0f2f7" onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background=''">
       <td style="padding:11px 12px;font-weight:700;color:#0d1b3e">${r.ship}</td>
       <td style="padding:11px 12px;font-size:12px;color:#5a6480">${r.owner}</td>
       <td style="padding:11px 12px;font-size:12px;color:#5a6480">${r.date25||'-'}</td>
       <td style="padding:11px 12px;text-align:center">
-        <button onclick="openReminderDetail(${idx}, ${JSON.stringify(sorted).replace(/"/g,'&quot;')})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #d9dff0;background:none;cursor:pointer;font-size:12px;color:#7a85a3;font-weight:700;font-family:inherit" title="상세보기">i</button>
+        <button onclick="openReminderDetail(${idx})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #d9dff0;background:none;cursor:pointer;font-size:12px;color:#7a85a3;font-weight:700;font-family:inherit" title="상세보기">i</button>
       </td>
     </tr>`;
   }).join('');
   document.getElementById('reminderOverlay').classList.add('open');
 }
 
-function openReminderDetail(idx, sortedJson) {
-  const sorted = sortedJson ? JSON.parse(sortedJson.replace(/&quot;/g,'"')) : reminderVessels;
-  curData = sorted.map(v=>({...v,_t:'BWTS'}));
+function openReminderDetail(idx) {
+  curData = _reminderSorted.map(v=>({...v,_t:'BWTS'}));
   document.getElementById('reminderOverlay').classList.remove('open');
   openModal(idx);
 }
