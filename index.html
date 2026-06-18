@@ -231,12 +231,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
       <p>BWTS · SOX Scrubber MRO 서비스 수주 현황 및 2026 파이프라인</p>
     </div>
 
-    <!-- 재계약 알림 배너 -->
-    <div id="reminderBanner" style="display:none;background:#fff1f1;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <!-- 재계약 리마인더 배너 -->
+    <div id="reminderBanner" style="display:none;background:#fff1f1;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:32px;height:32px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
+        <span style="font-size:18px">⚠️</span>
         <div>
           <div style="font-size:13px;font-weight:700;color:#b91c1c">재계약 컨택 필요</div>
           <div style="font-size:12px;color:#ef4444;margin-top:2px">2025년 수주했으나 2026년 견적 미발송 호선</div>
@@ -246,6 +244,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
         0척 확인
       </button>
     </div>
+
+    <!-- KPI 5개 -->
     <div class="kpi-grid5">
       <div class="kpi5 kpi5-blue">
         <div class="kpi5-top">
@@ -431,24 +431,25 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 </div>
 
-<!-- 재계약 모달 -->
+<!-- REMINDER MODAL -->
 <div class="modal-overlay" id="reminderOverlay" onclick="closeReminderModal(event)">
-  <div class="modal" style="width:560px">
+  <div class="modal" style="width:600px">
     <div class="modal-hd">
       <div>
         <h2 id="reminderModalTitle">재계약 컨택 필요 호선</h2>
-        <div style="font-size:12px;color:#7a85a3;margin-top:3px">2025년 수주 후 330일 경과 · 2026년 견적 미발송</div>
+        <div style="font-size:12px;color:#7a85a3;margin-top:3px">2025년 실행일 기준 330일 경과 · 2026년 견적 미발송</div>
       </div>
       <button class="modal-close" onclick="document.getElementById('reminderOverlay').classList.remove('open')">✕</button>
     </div>
     <div class="modal-bd">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead>
-          <tr style="border-bottom:1.5px solid #e8ecf5">
-            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#7a85a3;font-weight:700">선명</th>
-            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#7a85a3;font-weight:700">선주사</th>
-            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#7a85a3;font-weight:700">2025년 승선일</th>
-            <th style="padding:8px 10px;text-align:center;font-size:11px;color:#7a85a3;font-weight:700">상세</th>
+          <tr style="background:#f6f8fc;border-bottom:1.5px solid #eaecf5">
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">2025년 승선일</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">경과일</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">상세</th>
           </tr>
         </thead>
         <tbody id="reminderTableBody"></tbody>
@@ -471,34 +472,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 <script>
 // ======================== CONFIG ========================
 const SHEET_ID = '13mvFbhAR_RJ95mt-HQy_lC_q9AmI0NIdEbo1XJvcZPc';
-const BWTS_GID = '695648690';
-const SOX_GID = '0';
+const BWTS_GID = '0';
+const SOX_GID = '683055706';
 
 let BWTS = [];
 let SOX = [];
 
-async function fetchCsv(gid) {
-  const sheetUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
-  
-  // 프록시 목록 - 순서대로 시도
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(sheetUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(sheetUrl)}`,
-    `https://cors-anywhere.herokuapp.com/${sheetUrl}`,
-  ];
-
-  for (const url of proxies) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.length > 100) return text;
-      }
-    } catch(e) {
-      continue;
-    }
-  }
-  throw new Error('모든 프록시 시도 실패');
+function csvUrl(gid) {
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
 }
 
 // CSV 파싱 (큰따옴표 포함 처리)
@@ -604,8 +585,8 @@ async function loadData() {
   try {
     // BWTS 시트
     const [r1, r2] = await Promise.all([
-      fetchCsv(BWTS_GID),
-      fetchCsv(SOX_GID),
+      fetch(csvUrl(BWTS_GID)).then(r => r.text()),
+      fetch(csvUrl(SOX_GID)).then(r => r.text()),
     ]);
     BWTS = parseBWTS(parseCSV(r1));
     SOX  = parseSOX(parseCSV(r2));
@@ -616,7 +597,6 @@ async function loadData() {
 
     hideLoading();
     initDash();
-    calcReminder();
     curData = allData();
     renderRTable(curData);
     renderCGrid('');
@@ -701,28 +681,35 @@ function initDash() {
       <td style="font-weight:700;font-size:12px;color:${parseInt(totPct)>50?'#10b981':parseInt(totPct)>20?'#f59e0b':'#7a85a3'}">${totPct}</td>
     </tr>`;
   }).join('');
+
+  // ── 재계약 리마인더 ──
+  calcReminder();
 }
 
-// ======================== 재계약 알림 ========================
+// 날짜 파싱 (2025. 2. 13 형식)
+function parseDate25(str) {
+  if(!str) return null;
+  const clean = str.replace(/\s/g,'').replace(/\\/g,'');
+  const m = clean.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+  if(!m) return null;
+  return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+}
+
 let reminderVessels = [];
 
 function calcReminder() {
   const today = new Date();
   reminderVessels = BWTS.filter(r => {
-    if (!r.order25 || r.est26) return false; // 2025 수주 없거나 2026 견적 있으면 제외
-    if (!r.date25) return false;
-    // 날짜 파싱 (2025. 2. 13 형식)
-    const clean = r.date25.replace(/\./g, '-').replace(/\s/g, '').replace(/--/g, '-').replace(/-$/,'');
-    const parts = clean.split('-').map(p => parseInt(p));
-    if (parts.length < 3 || isNaN(parts[0])) return false;
-    const execDate = new Date(parts[0], parts[1]-1, parts[2]);
-    const diffDays = (today - execDate) / (1000 * 60 * 60 * 24);
-    return diffDays >= 330;
+    if(!r.order25) return false;
+    if(r.est26)    return false;
+    const d = parseDate25(r.date25);
+    if(!d) return false;
+    const diff = Math.floor((today - d) / (1000*60*60*24));
+    return diff >= 330;
   });
-
   const banner = document.getElementById('reminderBanner');
-  const btn = document.getElementById('reminderBtn');
-  if (reminderVessels.length > 0) {
+  const btn    = document.getElementById('reminderBtn');
+  if(reminderVessels.length > 0) {
     banner.style.display = 'flex';
     btn.textContent = `${reminderVessels.length}척 확인`;
   } else {
@@ -731,33 +718,41 @@ function calcReminder() {
 }
 
 function openReminderModal() {
-  document.getElementById('reminderModalTitle').textContent = `재계약 컨택 필요 호선 (${reminderVessels.length}척)`;
-  document.getElementById('reminderTableBody').innerHTML = reminderVessels.map((r, idx) => `
-    <tr style="border-bottom:1px solid #f0f2f7">
-      <td style="padding:10px 10px;font-weight:700;color:#0d1b3e">${r.ship}</td>
-      <td style="padding:10px 10px;font-size:12px;color:#5a6480">${r.owner}</td>
-      <td style="padding:10px 10px;font-size:12px;color:#5a6480">${r.date25||'-'}</td>
-      <td style="padding:10px 10px;text-align:center">
-        <button onclick="openReminderDetail(${BWTS.indexOf(r)})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #9ba3bc;background:none;cursor:pointer;font-size:11px;font-weight:800;color:#9ba3bc;font-family:inherit">i</button>
+  const today = new Date();
+  document.getElementById('reminderModalTitle').textContent =
+    `재계약 컨택 필요 호선 (${reminderVessels.length}척)`;
+  document.getElementById('reminderTableBody').innerHTML = reminderVessels.map((r, idx) => {
+    const d = parseDate25(r.date25);
+    const diff = d ? Math.floor((today - d)/(1000*60*60*24)) : '-';
+    return `<tr style="border-bottom:1px solid #f0f2f7" onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background=''">
+      <td style="padding:11px 12px;font-weight:700;color:#0d1b3e">${r.ship}</td>
+      <td style="padding:11px 12px;font-size:12px;color:#5a6480">${r.owner}</td>
+      <td style="padding:11px 12px;font-size:12px;color:#5a6480">${r.date25||'-'}</td>
+      <td style="padding:11px 12px;text-align:center">
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${diff>=365?'#fee2e2':'#fef3c7'};color:${diff>=365?'#b91c1c':'#92400e'}">${diff}일</span>
       </td>
-    </tr>
-  `).join('');
+      <td style="padding:11px 12px;text-align:center">
+        <button onclick="openReminderDetail(${idx})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #d9dff0;background:none;cursor:pointer;font-size:12px;color:#7a85a3;font-weight:700;font-family:inherit" title="상세보기">i</button>
+      </td>
+    </tr>`;
+  }).join('');
   document.getElementById('reminderOverlay').classList.add('open');
 }
 
-function openReminderDetail(bwtsIdx) {
+function openReminderDetail(idx) {
+  const r = reminderVessels[idx];
+  // 기존 선박 상세 모달 재활용
+  curData = reminderVessels.map(v=>({...v,_t:'BWTS'}));
   document.getElementById('reminderOverlay').classList.remove('open');
-  // curData에서 해당 선박 찾아서 모달 열기
-  const r = {...BWTS[bwtsIdx], _t:'BWTS'};
-  const tempIdx = curData.length;
-  curData.push(r);
-  openModal(tempIdx);
+  openModal(idx);
 }
 
 function closeReminderModal(e) {
-  if (e.target === document.getElementById('reminderOverlay'))
+  if(e.target === document.getElementById('reminderOverlay'))
     document.getElementById('reminderOverlay').classList.remove('open');
 }
+
+// ======================== SEARCH ========================
 let curData = [];
 function setStab(t, el) {
   document.querySelectorAll('.search-tab').forEach(x=>x.classList.remove('active'));
