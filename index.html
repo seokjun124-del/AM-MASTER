@@ -361,9 +361,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 
   <!-- ===== SEARCH ===== -->
   <div class="page" id="page-search">
-    <div class="page-header">
-      <h1>🔍 선박 검색</h1>
-      <p>선명, IMO, 선주사로 BWTS · SOX Scrubber 설치 선박을 빠르게 조회합니다</p>
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1>🔍 선박 검색</h1>
+        <p>IMO번호, 선명, 프로젝트, 선주사로 검색하세요</p>
+      </div>
+      <button onclick="openCartModal()" style="display:flex;align-items:center;gap:8px;padding:10px 18px;background:#fff;border:2px solid #1e6fd9;border-radius:10px;color:#1e6fd9;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;position:relative">
+        🛒 선택 목록
+        <span id="cartBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">0</span>
+      </button>
     </div>
     <div class="search-bar-wrap">
       <div class="search-tabs">
@@ -429,6 +435,55 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
   <div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.2);border-top-color:#1e6fd9;border-radius:50%;animation:spin 0.8s linear infinite"></div>
   <div style="color:#fff;font-size:14px;font-weight:600">Google Sheets에서 데이터 불러오는 중...</div>
   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</div>
+
+<!-- 장바구니 모달 -->
+<div class="modal-overlay" id="cartOverlay" onclick="closeCartModal(event)">
+  <div class="modal" style="width:480px">
+    <div class="modal-hd">
+      <h2 id="cartTitle">선택된 선박 목록</h2>
+      <button class="modal-close" onclick="document.getElementById('cartOverlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div id="cartList"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="openCartView()" style="flex:1;padding:11px;background:#1e6fd9;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">👁 모아보기</button>
+        <button onclick="clearCart()" style="padding:11px 16px;background:#fff;color:#ef4444;border:1.5px solid #ef4444;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🗑 전체 삭제</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 모아보기 모달 -->
+<div class="modal-overlay" id="cartViewOverlay" onclick="closeCartViewModal(event)">
+  <div class="modal" style="width:900px;max-width:95vw">
+    <div class="modal-hd">
+      <h2 id="cartViewTitle">선택 선박 모아보기</h2>
+      <button class="modal-close" onclick="document.getElementById('cartViewOverlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-bd" style="padding:12px 20px 20px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:700px">
+        <thead>
+          <tr style="background:#f6f8fc;border-bottom:1.5px solid #eaecf5">
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">No.</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">IMO</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">프로젝트</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">국가</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">용량/센서</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2025수주</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2026견적</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2026수주</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">상세</th>
+            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">제거</th>
+          </tr>
+        </thead>
+        <tbody id="cartViewBody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- REMINDER MODAL -->
@@ -862,13 +917,132 @@ function doSearch() {
   renderRTable(curData);
 }
 
+// ======================== CART ========================
+let cart = [];
+
+function toggleCart(idx) {
+  const r = curData[idx];
+  if (!r) return;
+  const key = r._t + '_' + (r.imo || r.ship);
+  const existIdx = cart.findIndex(c => (c._t + '_' + (c.imo || c.ship)) === key);
+  if (existIdx >= 0) {
+    cart.splice(existIdx, 1);
+  } else {
+    cart.push({...r});
+  }
+  updateCartBadge();
+  renderRTable(curData); // 버튼 상태 업데이트
+}
+
+function isInCart(r) {
+  const key = r._t + '_' + (r.imo || r.ship);
+  return cart.some(c => (c._t + '_' + (c.imo || c.ship)) === key);
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  if (cart.length > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = cart.length;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function openCartModal() {
+  if (cart.length === 0) {
+    alert('선택된 선박이 없어요. + 버튼으로 선박을 추가해주세요!');
+    return;
+  }
+  document.getElementById('cartTitle').textContent = `선택된 선박 목록 (${cart.length}척)`;
+  document.getElementById('cartList').innerHTML = cart.map((r, idx) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:9px;background:#f6f8fc;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="type-badge ${r._t==='BWTS'?'tb-bwts':'tb-sox'}">${r._t}</span>
+        <div>
+          <div style="font-weight:700;font-size:13px;color:#0d1b3e">${r.ship}</div>
+          <div style="font-size:11px;color:#7a85a3">${r.imo||''} · ${r.owner}</div>
+        </div>
+      </div>
+      <button onclick="removeFromCart(${idx})" style="width:24px;height:24px;border-radius:50%;border:none;background:#fee2e2;color:#ef4444;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:inherit">×</button>
+    </div>
+  `).join('');
+  document.getElementById('cartOverlay').classList.add('open');
+}
+
+function removeFromCart(idx) {
+  cart.splice(idx, 1);
+  updateCartBadge();
+  renderRTable(curData);
+  if (cart.length === 0) {
+    document.getElementById('cartOverlay').classList.remove('open');
+  } else {
+    openCartModal();
+  }
+}
+
+function clearCart() {
+  cart = [];
+  updateCartBadge();
+  renderRTable(curData);
+  document.getElementById('cartOverlay').classList.remove('open');
+}
+
+function openCartView() {
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.getElementById('cartViewTitle').textContent = `선택 선박 모아보기 (${cart.length}척)`;
+  document.getElementById('cartViewBody').innerHTML = cart.map((r, idx) => {
+    const ib = r._t === 'BWTS';
+    return `<tr style="border-bottom:1px solid #f0f2f7" onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background=''">
+      <td style="padding:10px 12px;color:#9ba3bc;font-weight:700">${idx+1}</td>
+      <td style="padding:10px 12px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
+      <td style="padding:10px 12px;font-family:monospace;font-size:11px;color:#7a85a3">${r.imo||'-'}</td>
+      <td style="padding:10px 12px;font-weight:700;color:#0d1b3e">${r.ship}</td>
+      <td style="padding:10px 12px;font-size:11px;color:#5a6480">${r.project||r.system||'-'}</td>
+      <td style="padding:10px 12px;font-size:11px">${r.owner}</td>
+      <td style="padding:10px 12px;font-size:11px">${r.country}</td>
+      <td style="padding:10px 12px;font-size:11px;font-family:monospace">${r.spec||r.system||'-'}</td>
+      <td style="padding:10px 12px;text-align:center">${(ib&&r.order25)||(!ib&&r.status==='계약유효')?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:10px 12px;text-align:center">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:10px 12px;text-align:center">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:10px 12px;text-align:center">
+        <button onclick="openCartItemDetail(${idx})" class="info-btn" title="상세">i</button>
+      </td>
+      <td style="padding:10px 12px;text-align:center">
+        <button onclick="removeFromCart(${idx});openCartView();" style="width:22px;height:22px;border-radius:50%;border:none;background:#fee2e2;color:#ef4444;cursor:pointer;font-size:13px;font-family:inherit">×</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('cartViewOverlay').classList.add('open');
+}
+
+function openCartItemDetail(idx) {
+  curData = [...cart];
+  document.getElementById('cartViewOverlay').classList.remove('open');
+  openModal(idx);
+}
+
+function closeCartModal(e) {
+  if (e.target === document.getElementById('cartOverlay'))
+    document.getElementById('cartOverlay').classList.remove('open');
+}
+
+function closeCartViewModal(e) {
+  if (e.target === document.getElementById('cartViewOverlay'))
+    document.getElementById('cartViewOverlay').classList.remove('open');
+}
+
 function renderRTable(data) {
   document.getElementById('rCount').textContent = data.length;
   document.getElementById('rFooter').textContent = `총 ${data.length}개의 선박이 검색되었습니다.`;
   document.getElementById('rTb').innerHTML = data.map((r, idx) => {
     const ib = r._t==='BWTS';
+    const inC = isInCart(r);
+    const btnStyle = inC
+      ? 'width:22px;height:22px;border-radius:5px;border:none;background:#ef4444;cursor:pointer;font-size:13px;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center'
+      : 'width:22px;height:22px;border-radius:5px;border:1.5px solid #1e6fd9;background:#fff;cursor:pointer;font-size:13px;color:#1e6fd9;font-weight:700;display:inline-flex;align-items:center;justify-content:center';
     return `<tr>
-      <td style="text-align:center"><button style="width:22px;height:22px;border-radius:5px;border:1px solid #d9dff0;background:#f6f8fc;cursor:pointer;font-size:9px;color:#7a85a3">+</button></td>
+      <td style="text-align:center"><button style="${btnStyle}" onclick="toggleCart(${idx})">${inC?'×':'+'}</button></td>
       <td><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
       <td style="font-family:monospace;font-size:11px;color:#7a85a3">${r.imo||'-'}</td>
       <td>
