@@ -455,13 +455,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 
 <!-- 모아보기 모달 -->
 <div class="modal-overlay" id="cartViewOverlay" onclick="closeCartViewModal(event)">
-  <div class="modal" style="width:900px;max-width:95vw">
+  <div class="modal" style="width:1100px;max-width:98vw">
     <div class="modal-hd">
       <h2 id="cartViewTitle">선택 선박 모아보기</h2>
       <button class="modal-close" onclick="document.getElementById('cartViewOverlay').classList.remove('open')">✕</button>
     </div>
     <div class="modal-bd" style="padding:12px 20px 20px;overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:700px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1000px;white-space:nowrap">
         <thead>
           <tr style="background:#f6f8fc;border-bottom:1.5px solid #eaecf5">
             <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">No.</th>
@@ -469,6 +469,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
             <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">IMO</th>
             <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
             <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">프로젝트</th>
+            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면번호</th>
             <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
             <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">국가</th>
             <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">용량/센서</th>
@@ -631,6 +632,7 @@ function parseBWTSCsv(text) {
     country: (r[7]  || '').trim(),       // H: 국가
     type:    (r[8]  || '').trim(),       // I: SHIP'S TYPE
     spec:    (r[10] || '').trim(),       // K: SPEC (DESIGN)
+    drawNo:  (r[9]  || '').trim(),       // J: DRAW NO
     pt:      (r[12] || '').trim(),       // M: PT
     mtr:     (r[13] || '').trim(),       // N: MTR(PT)
     tt:      (r[14] || '').trim(),       // O: TT
@@ -1013,8 +1015,9 @@ function openCartView() {
       <td style="padding:10px 12px;color:#9ba3bc;font-weight:700">${idx+1}</td>
       <td style="padding:10px 12px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
       <td style="padding:10px 12px;font-family:monospace;font-size:11px;color:#7a85a3">${r.imo||'-'}</td>
-      <td style="padding:10px 12px;font-weight:700;color:#0d1b3e">${r.ship}</td>
+      <td style="padding:10px 12px;font-weight:600;color:#0d1b3e">${r.ship}</td>
       <td style="padding:10px 12px;font-size:11px;color:#5a6480">${r.project||r.system||'-'}</td>
+      <td style="padding:10px 12px;font-size:11px;color:#5a6480;font-family:monospace">${ib?(r.drawNo||'-'):'-'}</td>
       <td style="padding:10px 12px;font-size:11px">${r.owner}</td>
       <td style="padding:10px 12px;font-size:11px">${r.country}</td>
       <td style="padding:10px 12px;font-size:11px;font-family:monospace">${r.spec||r.system||'-'}</td>
@@ -1025,16 +1028,27 @@ function openCartView() {
         <button onclick="openCartItemDetail(${idx})" class="info-btn" title="상세">i</button>
       </td>
       <td style="padding:10px 12px;text-align:center">
-        <button onclick="removeFromCart(${idx});openCartView();" style="width:22px;height:22px;border-radius:50%;border:none;background:#fee2e2;color:#ef4444;cursor:pointer;font-size:13px;font-family:inherit">×</button>
+        <button onclick="removeFromCartView(${idx})" style="width:22px;height:22px;border-radius:50%;border:none;background:#fee2e2;color:#ef4444;cursor:pointer;font-size:13px;font-family:inherit">×</button>
       </td>
     </tr>`;
   }).join('');
   document.getElementById('cartViewOverlay').classList.add('open');
 }
 
+function removeFromCartView(idx) {
+  cart.splice(idx, 1);
+  updateCartBadge();
+  renderRTable(curData);
+  if (cart.length === 0) {
+    document.getElementById('cartViewOverlay').classList.remove('open');
+  } else {
+    openCartView();
+  }
+}
+
 function openCartItemDetail(idx) {
   curData = [...cart];
-  document.getElementById('cartViewOverlay').classList.remove('open');
+  // 모아보기는 닫지 않고 상세 모달만 열기
   openModal(idx);
 }
 
