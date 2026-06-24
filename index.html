@@ -120,7 +120,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 .tb-bwts{background:#dbeafe;color:#1d4ed8}
 .tb-sox{background:#d1fae5;color:#065f46}
 .ship-name{font-weight:700;color:#0d1b3e}
-.info-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid #9ba3bc;background:none;cursor:pointer;font-size:10px;font-weight:800;color:#9ba3bc;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;margin-left:5px;vertical-align:middle}
+.info-btn{padding:3px 8px;border-radius:6px;border:1.5px solid #9ba3bc;background:none;cursor:pointer;font-size:11px;font-weight:700;color:#9ba3bc;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;margin-left:5px;vertical-align:middle}
 .info-btn:hover{border-color:#1e6fd9;color:#1e6fd9;background:#e8f0fd}
 .chk{color:#10b981;font-weight:700}
 .dsh{color:#d1d5e0}
@@ -361,20 +361,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 
   <!-- ===== SEARCH ===== -->
   <div class="page" id="page-search">
-    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div>
-        <h1>🔍 선박 검색</h1>
-        <p>IMO번호, 선명, 프로젝트, 선주사로 검색하세요</p>
-      </div>
-      <button onclick="openCartModal()" style="display:flex;align-items:center;gap:8px;padding:10px 18px;background:#fff;border:2px solid #1e6fd9;border-radius:10px;color:#1e6fd9;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;position:relative">
-        🛒 선택 목록
-        <span id="cartBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">0</span>
-      </button>
+    <div class="page-header">
+      <h1>🔍 선박 검색</h1>
+      <p>IMO번호, 선명, 프로젝트, 선주사로 검색하세요</p>
     </div>
     <div class="search-bar-wrap">
       <div class="search-tabs">
         <button class="search-tab active" onclick="setStab('single',this)">단일 검색</button>
         <button class="search-tab" onclick="setStab('multi',this)">다중 검색 (엑셀 붙여넣기)</button>
+        <button onclick="openCartModal()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:#fff;border:1.5px solid #1e6fd9;border-radius:8px;color:#1e6fd9;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;position:relative;margin-left:4px">
+          🛒 선택 목록
+          <span id="cartBadge" style="display:none;position:absolute;top:-7px;right:-7px;background:#ef4444;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center">0</span>
+        </button>
       </div>
       <div class="search-input-row">
         <input class="s-input" id="sInput" placeholder="선명, IMO번호, 선주사명 입력..." oninput="doSearch()" onkeydown="if(event.key==='Enter')doSearch()">
@@ -385,7 +383,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
         </button>
       </div>
       <div id="multiBox" style="display:none;margin-top:10px">
-        <textarea style="width:100%;height:80px;padding:10px;border:1.5px solid #d9dff0;border-radius:9px;font-size:12px;resize:none;font-family:inherit" placeholder="엑셀에서 선명 또는 IMO 복사 후 붙여넣기..."></textarea>
+        <textarea id="multiInput" style="width:100%;height:80px;padding:10px;border:1.5px solid #d9dff0;border-radius:9px;font-size:12px;resize:none;font-family:inherit" placeholder="엑셀에서 선명 또는 IMO 여러 셀 선택 후 붙여넣기 (Ctrl+V)..."></textarea>
+        <button onclick="doMultiSearch()" style="margin-top:8px;padding:8px 18px;background:#1e6fd9;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">검색</button>
       </div>
     </div>
     <div class="results-wrap">
@@ -895,6 +894,23 @@ function allData() {
   return [...BWTS.map(r=>({...r,_t:'BWTS'})),...SOX.map(r=>({...r,_t:'SCRUBBER'}))];
 }
 
+function doMultiSearch() {
+  const raw = document.getElementById('multiInput').value.trim();
+  if (!raw) return;
+  // 탭, 줄바꿈, 쉼표로 분리
+  const terms = raw.split(/[\t\n\r,]+/).map(t => t.trim().toLowerCase()).filter(Boolean);
+  const all = allData();
+  curData = all.filter(r =>
+    terms.some(t =>
+      (r.ship||'').toLowerCase().includes(t) ||
+      (r.imo||'').toLowerCase().includes(t) ||
+      (r.owner||'').toLowerCase().includes(t) ||
+      (r.project||'').toLowerCase().includes(t)
+    )
+  );
+  renderRTable(curData);
+}
+
 function doSearch() {
   const q = (document.getElementById('sInput').value||'').toLowerCase().trim();
   if (!q) {
@@ -1066,33 +1082,33 @@ function openModal(idx) {
   const ib = r._t==='BWTS';
   document.getElementById('mTitle').textContent = r.ship;
 
+  const secTitle = (txt, color='#1e6fd9') =>
+    `<h3 style="font-size:16px;font-weight:700;color:${color};text-transform:none;letter-spacing:0;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #e8ecf5">${txt}</h3>`;
+
+  const chk = v => v ? `<span style="color:#10b981;font-size:16px">✓</span>` : `<span style="color:#d1d5e0">—</span>`;
+
   if (ib) {
-    // BWTS 레이아웃
-    const est25 = r.order25 ? '✅ 견적' : '—';
-    const ord25 = r.order25 ? '✅ 수주' : '—';
-    const est26 = r.est26   ? '✅ 견적' : '—';
-    const ord26 = r.order26 ? '✅ 수주' : '—';
     document.getElementById('mBody').innerHTML = `
       <div class="m-section">
-        <h3>선박 정보</h3>
+        ${secTitle('선박 정보')}
         <div class="m-grid">
           <div class="m-item"><label>IMO</label><span>${r.imo||'-'}</span></div>
           <div class="m-item"><label>유형</label><span><span class="type-badge tb-bwts">BWTS</span></span></div>
-          <div class="m-item"><label>선명</label><span style="font-weight:700">${r.ship}</span></div>
+          <div class="m-item"><label>선명</label><span>${r.ship}</span></div>
           <div class="m-item"><label>프로젝트</label><span>${r.project||'-'}</span></div>
           <div class="m-item"><label>용량 / SPEC</label><span>${r.spec||'-'}</span></div>
           <div class="m-item"><label>선종</label><span>${r.type||'-'}</span></div>
         </div>
       </div>
       <div class="m-section">
-        <h3>선주사 정보</h3>
+        ${secTitle('선주사 정보')}
         <div class="m-grid">
-          <div class="m-item full"><label>선주사</label><span style="font-weight:600">${r.owner||'-'}</span></div>
+          <div class="m-item full"><label>선주사</label><span>${r.owner||'-'}</span></div>
           <div class="m-item full"><label>국가</label><span>${r.country||'-'}</span></div>
         </div>
       </div>
       <div class="m-section">
-        <h3>센서 / 스펙</h3>
+        ${secTitle('센서 / 스펙')}
         <div class="m-grid">
           <div class="m-item"><label>PT</label><span>${r.pt||'-'}</span></div>
           <div class="m-item"><label>PT 센서 미터수</label><span>${r.mtr ? r.mtr+'MTR' : '-'}</span></div>
@@ -1103,50 +1119,50 @@ function openModal(idx) {
         </div>
       </div>
       <div class="m-section">
-        <h3>수주 현황</h3>
+        ${secTitle('수주 현황')}
         <div style="background:#f6f8fc;border-radius:10px;padding:12px 14px;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;color:#1e6fd9;margin-bottom:8px">2025년</div>
-          <div class="m-grid">
-            <div class="m-item"><label>견적</label><span>${est25}</span></div>
-            <div class="m-item"><label>수주</label><span>${ord25}</span></div>
-            <div class="m-item full"><label>실행일</label><span>${r.date25||'-'}</span></div>
+          <div style="font-size:12px;font-weight:700;color:#1e6fd9;margin-bottom:10px">2025년</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            <div class="m-item"><label>견적</label><span>${chk(r.order25)}</span></div>
+            <div class="m-item"><label>수주</label><span>${chk(r.order25)}</span></div>
+            <div class="m-item"><label>실행일</label><span style="font-size:12px">${r.date25||'-'}</span></div>
+            <div class="m-item"><label>&nbsp;</label><span></span></div>
           </div>
         </div>
         <div style="background:#f6f8fc;border-radius:10px;padding:12px 14px">
-          <div style="font-size:11px;font-weight:700;color:#10b981;margin-bottom:8px">2026년</div>
-          <div class="m-grid">
-            <div class="m-item"><label>견적</label><span>${est26}</span></div>
-            <div class="m-item"><label>수주</label><span>${ord26}</span></div>
-            <div class="m-item"><label>실행일</label><span>${r.date26||'-'}</span></div>
-            <div class="m-item"><label>서비스 형태</label><span>${r.svc||'-'}</span></div>
+          <div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:10px">2026년</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            <div class="m-item"><label>견적</label><span>${chk(r.est26)}</span></div>
+            <div class="m-item"><label>수주</label><span>${chk(r.order26)}</span></div>
+            <div class="m-item"><label>실행일</label><span style="font-size:12px">${r.date26||'-'}</span></div>
+            <div class="m-item"><label>서비스형태</label><span style="font-size:12px">${r.svc||'-'}</span></div>
           </div>
         </div>
-        ${r.amt25?`<div style="margin-top:10px;padding:10px 14px;background:#e8f0fd;border-radius:10px"><label style="font-size:11px;color:#1e6fd9;font-weight:700">2025 수주금액</label><div style="font-size:18px;font-weight:800;color:#1e6fd9;margin-top:3px">USD ${Number(r.amt25).toLocaleString()}</div></div>`:''}
+        ${r.amt25?`<div style="margin-top:10px;padding:10px 14px;background:#e8f0fd;border-radius:10px"><label style="font-size:11px;color:#1e6fd9;font-weight:700">2025 수주금액</label><div style="font-size:18px;font-weight:700;color:#1e6fd9;margin-top:3px">USD ${Number(r.amt25).toLocaleString()}</div></div>`:''}
       </div>`;
   } else {
-    // SOX SCRUBBER 레이아웃
     const statusColor = r.status==='계약유효'?'#10b981':r.status==='계약파기'?'#ef4444':'#f59e0b';
     document.getElementById('mBody').innerHTML = `
       <div class="m-section">
-        <h3>선박 정보</h3>
+        ${secTitle('선박 정보')}
         <div class="m-grid">
           <div class="m-item"><label>IMO</label><span>${r.imo||'-'}</span></div>
           <div class="m-item"><label>유형</label><span><span class="type-badge tb-sox">SCRUBBER</span></span></div>
-          <div class="m-item"><label>선명</label><span style="font-weight:700">${r.ship}</span></div>
+          <div class="m-item"><label>선명</label><span>${r.ship}</span></div>
           <div class="m-item"><label>프로젝트</label><span>${r.project||'-'}</span></div>
           <div class="m-item"><label>시스템</label><span>${r.system||'-'}</span></div>
           <div class="m-item"><label>선종</label><span>${r.type||'-'}</span></div>
         </div>
       </div>
       <div class="m-section">
-        <h3>선주사 정보</h3>
+        ${secTitle('선주사 정보')}
         <div class="m-grid">
-          <div class="m-item full"><label>선주사</label><span style="font-weight:600">${r.owner||'-'}</span></div>
+          <div class="m-item full"><label>선주사</label><span>${r.owner||'-'}</span></div>
           <div class="m-item full"><label>국가</label><span>${r.country||'-'}</span></div>
         </div>
       </div>
       <div class="m-section">
-        <h3>SOX Scrubber 정보</h3>
+        ${secTitle('SOX Scrubber 정보')}
         <div class="m-grid">
           <div class="m-item full"><label>OTP DATE</label><span>${r.otp||'-'}</span></div>
           <div class="m-item"><label>TUR SENSOR</label><span>${r.inTur||'-'} × ${r.tur||'-'} EA</span></div>
@@ -1154,10 +1170,10 @@ function openModal(idx) {
         </div>
       </div>
       <div class="m-section">
-        <h3>수주 현황</h3>
+        ${secTitle('수주 현황')}
         <div class="m-grid">
-          <div class="m-item full"><label>계약 STATUS</label><span style="font-weight:700;color:${statusColor}">${r.status||'-'}</span></div>
-          <div class="m-item full"><label>계약 금액</label><span style="font-weight:700">${r.cAmt||'-'}</span></div>
+          <div class="m-item full"><label>계약 STATUS</label><span style="color:${statusColor};font-size:13px">${r.status||'-'}</span></div>
+          <div class="m-item full"><label>계약 금액</label><span>${r.cAmt||'-'}</span></div>
           ${r.remark?`<div class="m-item full"><label>계약 REMARK</label><span style="font-size:12px;color:#5a6480">${r.remark}</span></div>`:''}
         </div>
       </div>`;
