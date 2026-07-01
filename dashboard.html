@@ -410,20 +410,82 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
   <div class="page" id="page-country">
     <div class="page-header">
       <h1>🌍 선주사 / 국가별 분석</h1>
-      <p>국가 또는 선주사를 선택하면 해당 선박 목록과 계약 현황이 표시됩니다</p>
+      <p>국가 또는 선주사를 선택하면 보유 선박 현황과 수주 상태를 확인합니다</p>
     </div>
-    <div class="c-search-wrap">
-      <div class="analysis-tabs">
-        <button class="analysis-tab active" onclick="setAtab('country',this)">🌐 국가별 분석</button>
-        <button class="analysis-tab" onclick="setAtab('owner',this)">👤 선주사별 분석</button>
+
+    <!-- 탭 -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="analysis-tab active" onclick="setAtab('country',this)">🌐 국가별 분석</button>
+      <button class="analysis-tab" onclick="setAtab('owner',this)">👤 선주사별 분석</button>
+    </div>
+
+    <!-- 2컬럼 레이아웃 -->
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start">
+
+      <!-- 왼쪽: 검색 + 목록 -->
+      <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
+        <div style="padding:12px 14px;border-bottom:1px solid #e8ecf5">
+          <input class="c-search" id="cInput" placeholder="국가 검색..." oninput="filterC()" style="margin-bottom:0">
+        </div>
+        <div id="cGrid" style="max-height:calc(100vh - 280px);overflow-y:auto;padding:8px"></div>
       </div>
-      <input class="c-search" id="cInput" placeholder="국가 검색..." oninput="filterC()">
-      <div class="country-grid" id="cGrid"></div>
-    </div>
-    <div class="c-result" id="cResult">
-      <div class="sec-title" id="cResultTitle"></div>
-      <div class="owner-cards" id="oCards"></div>
-      <div class="direct-vessels" id="dVessels"></div>
+
+      <!-- 오른쪽: 결과 -->
+      <div id="cResult" style="display:none">
+        <!-- 요약 카드 -->
+        <div id="cSummaryCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+
+        <!-- 국가모드: 선주사별 테이블 -->
+        <div id="cOwnerSection" style="display:none">
+          <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
+            <div style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e" id="cResultTitle"></div>
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead>
+                  <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
+                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700">BWTS</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700">2025수주</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700">2026수주</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#10b981;font-weight:700">SOX</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#10b981;font-weight:700">계약유효</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">보기</th>
+                  </tr>
+                </thead>
+                <tbody id="cOwnerTb"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 선주사모드: 선박 상세 -->
+        <div id="cOwnerDetail" style="display:none">
+          <!-- 컨택 필요 알림 -->
+          <div id="cContactAlert" style="display:none;background:#fff1f1;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#b91c1c;font-weight:600"></div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
+            <div style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e" id="cOwnerTitle"></div>
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead>
+                  <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
+                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
+                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
+                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">IMO</th>
+                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">프로젝트</th>
+                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">용량/센서</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2025수주</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2026견적</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2026수주</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">상세</th>
+                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">담기</th>
+                  </tr>
+                </thead>
+                <tbody id="cVesselTb"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -609,7 +671,8 @@ async function loadData() {
     // 검색탭 초기 빈 상태
     document.getElementById('rCount').textContent = '0';
     document.getElementById('rFooter').textContent = '검색어를 입력해주세요.';
-    document.getElementById('rTb').innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:#9ba3bc;font-size:13px">선명, IMO, 선주사를 검색하세요</td></tr>`;
+    document.getElementById('rTb').innerHTML = `<tr><td colspan="12" style="text-align:center;padding:40px;color:#9ba3bc;font-size:13px">선명, IMO, 선주사를 검색하세요</td></tr>`;
+    initCountryData();
     renderCGrid('');
   } catch(e) {
     console.error('loadData 에러:', e);
@@ -1225,80 +1288,157 @@ function exportExcel(){
   XLSX.writeFile(wb,'PANASIA_AM_선박현황.xlsx');
 }
 
-// ======================== COUNTRY ========================
+// ======================== COUNTRY / OWNER ========================
 let aMode='country', selItem=null;
+let _cAllCountries=[], _cAllOwners=[];
 
-const ALL_C=[...new Set([
-  ...BWTS.map(r=>r.country==='South Korea'||r.country==='SOUTH KOREA'?'SOUTH KOREA':r.country.toUpperCase()),
-  ...SOX.map(r=>{const c=r.country;
-    if(c==='South Korea')return 'SOUTH KOREA';
-    return c.toUpperCase();
-  })
-])].sort();
+function initCountryData(){
+  _cAllCountries=[...new Set([
+    ...BWTS.map(r=>normC(r.country)),
+    ...SOX.map(r=>normC(r.country))
+  ].filter(Boolean))].sort();
+  _cAllOwners=[...new Set([...BWTS.map(r=>r.owner),...SOX.map(r=>r.owner)].filter(Boolean))].sort();
+}
 
-const ALL_O=[...new Set([...BWTS.map(r=>r.owner),...SOX.map(r=>r.owner)])].sort();
+function normC(c){
+  if(!c)return '';
+  const u=c.toUpperCase().trim();
+  if(u==='SOUTH KOREA'||u==='KOREA')return 'SOUTH KOREA';
+  return u;
+}
 
 function setAtab(mode,el){
-  aMode=mode;selItem=null;
+  aMode=mode; selItem=null;
   document.querySelectorAll('.analysis-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('cInput').placeholder=mode==='country'?'국가 검색...':'선주사 검색...';
   document.getElementById('cInput').value='';
+  document.getElementById('cResult').style.display='none';
   renderCGrid('');
-  document.getElementById('cResult').classList.remove('show');
 }
 
 function filterC(){renderCGrid(document.getElementById('cInput').value.toLowerCase());}
 
 function renderCGrid(q){
-  const items=(aMode==='country'?ALL_C:ALL_O).filter(x=>!q||x.toLowerCase().includes(q));
-  document.getElementById('cGrid').innerHTML=items.map(x=>
-    `<button class="c-btn${selItem===x?' selected':''}" onclick="selC('${x.replace(/'/g,"\\'")}')">${x}</button>`
-  ).join('');
-}
-
-function normC(c){
-  if(!c)return '';
-  const u=c.toUpperCase();
-  if(u==='SOUTH KOREA')return 'SOUTH KOREA';
-  return u;
+  const items=(aMode==='country'?_cAllCountries:_cAllOwners).filter(x=>!q||x.toLowerCase().includes(q));
+  document.getElementById('cGrid').innerHTML=items.map(x=>`
+    <button onclick="selC('${x.replace(/'/g,"\\'")}')" style="display:block;width:100%;text-align:left;padding:8px 12px;border:none;background:${selItem===x?'#e8f0fd':'transparent'};color:${selItem===x?'#1e6fd9':'#2d3650'};font-size:12px;font-weight:${selItem===x?'700':'400'};cursor:pointer;border-radius:6px;font-family:inherit;margin-bottom:1px">
+      ${x}
+    </button>`).join('');
 }
 
 function selC(val){
   selItem=val;
   renderCGrid(document.getElementById('cInput').value.toLowerCase());
+  document.getElementById('cResult').style.display='block';
+
   const nu=val.toUpperCase();
   const bF=BWTS.filter(r=>aMode==='country'?normC(r.country)===nu:r.owner===val);
   const sF=SOX.filter(r=>aMode==='country'?normC(r.country)===nu:r.owner===val);
-  const res=document.getElementById('cResult');
-  res.classList.add('show');
-  document.getElementById('cResultTitle').textContent=`${val} — BWTS ${bF.length}척 · SOX ${sF.length}건`;
+
+  // 요약 카드
+  const b25=bF.filter(r=>r.order25).length;
+  const b26=bF.filter(r=>r.order26).length;
+  const sValid=sF.filter(r=>r.status==='계약유효').length;
+  const needContact=bF.filter(r=>{
+    if(!r.order25||r.est26) return false;
+    const d=parseDate25(r.date25);
+    if(!d) return false;
+    return Math.floor((new Date()-d)/(1000*60*60*24))>=330;
+  }).length;
+
+  document.getElementById('cSummaryCards').innerHTML=`
+    <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8ecf5;border-top:3px solid #1e6fd9">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">BWTS 선박</div>
+      <div style="font-size:24px;font-weight:800;color:#0d1b3e">${bF.length}<span style="font-size:12px;color:#9ba3bc;font-weight:400">척</span></div>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8ecf5;border-top:3px solid #10b981">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">2025/2026 수주</div>
+      <div style="font-size:24px;font-weight:800;color:#0d1b3e">${b25}<span style="font-size:12px;color:#9ba3bc;font-weight:400"> / </span>${b26}</div>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8ecf5;border-top:3px solid #7c3aed">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">SOX 계약유효</div>
+      <div style="font-size:24px;font-weight:800;color:#0d1b3e">${sValid}<span style="font-size:12px;color:#9ba3bc;font-weight:400">건</span></div>
+    </div>
+    <div style="background:${needContact>0?'#fff1f1':'#fff'};border-radius:10px;padding:14px 16px;border:1px solid ${needContact>0?'#fca5a5':'#e8ecf5'};border-top:3px solid ${needContact>0?'#ef4444':'#e8ecf5'}">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">재계약 컨택 필요</div>
+      <div style="font-size:24px;font-weight:800;color:${needContact>0?'#ef4444':'#0d1b3e'}">${needContact}<span style="font-size:12px;color:#9ba3bc;font-weight:400">척</span></div>
+    </div>`;
 
   if(aMode==='country'){
+    // 국가모드: 선주사별 테이블
+    document.getElementById('cOwnerSection').style.display='block';
+    document.getElementById('cOwnerDetail').style.display='none';
+    document.getElementById('cResultTitle').textContent=`${val} — 선주사 현황`;
+
     const om={};
-    bF.forEach(r=>{if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};om[r.owner].bwts.push(r);});
-    sF.forEach(r=>{if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};om[r.owner].sox.push(r);});
-    document.getElementById('oCards').innerHTML=Object.values(om).map(o=>`
-      <div class="owner-card" onclick="toggleVL('${o.owner.replace(/'/g,"\\'")}')">
-        <h4>${o.owner}</h4>
-        <div class="owner-card-stats">
-          <span class="tag tag-bwts">BWTS ${o.bwts.length}</span>
-          <span class="tag tag-sox">SOX ${o.sox.length}</span>
-        </div>
-        <div class="vessel-mini-list" id="vl-${o.owner.replace(/[^a-zA-Z0-9]/g,'_')}">
-          ${[...o.bwts.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-bwts" style="font-size:10px">${v.order25?'2025수주':'견적'}</span></div>`),
-             ...o.sox.map(v=>`<div class="v-row"><span><b>${v.ship}</b> <span style="font-size:10px;color:#9ba3bc">${v.imo||''}</span></span><span class="tag tag-sox" style="font-size:10px">${v.status||'SOX'}</span></div>`)].join('')}
-        </div>
-      </div>`).join('')||'<p style="color:#9ba3bc;font-size:13px;grid-column:1/-1">해당 국가의 데이터가 없습니다.</p>';
-    document.getElementById('dVessels').innerHTML='';
+    bF.forEach(r=>{
+      if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};
+      om[r.owner].bwts.push(r);
+    });
+    sF.forEach(r=>{
+      if(!om[r.owner])om[r.owner]={owner:r.owner,bwts:[],sox:[]};
+      om[r.owner].sox.push(r);
+    });
+
+    document.getElementById('cOwnerTb').innerHTML=Object.values(om)
+      .sort((a,b)=>(b.bwts.length+b.sox.length)-(a.bwts.length+a.sox.length))
+      .map(o=>{
+        const o25=o.bwts.filter(r=>r.order25).length;
+        const o26=o.bwts.filter(r=>r.order26).length;
+        const sv=o.sox.filter(r=>r.status==='계약유효').length;
+        return `<tr style="border-bottom:1px solid #f0f2f7" onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background=''">
+          <td style="padding:10px 12px;font-weight:600;color:#0d1b3e">${o.owner}</td>
+          <td style="padding:10px 12px;text-align:center;color:#1e6fd9;font-weight:700">${o.bwts.length||'-'}</td>
+          <td style="padding:10px 12px;text-align:center"><span class="chk">${o25>0?'✓':''}</span><span style="color:#9ba3bc">${o25||'-'}</span></td>
+          <td style="padding:10px 12px;text-align:center"><span style="color:#9ba3bc">${o26||'-'}</span></td>
+          <td style="padding:10px 12px;text-align:center;color:#10b981;font-weight:700">${o.sox.length||'-'}</td>
+          <td style="padding:10px 12px;text-align:center;color:#10b981">${sv||'-'}</td>
+          <td style="padding:10px 12px;text-align:center">
+            <button onclick="selC('${o.owner.replace(/'/g,"\\'")}')" style="padding:4px 10px;background:#e8f0fd;color:#1e6fd9;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">선박보기</button>
+          </td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="7" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
+
   } else {
-    document.getElementById('oCards').innerHTML='';
-    const all=[...bF.map(r=>({...r,_t:'BWTS'})),...sF.map(r=>({...r,_t:'SOX'}))];
-    document.getElementById('dVessels').innerHTML=all.map(v=>`
-      <div class="v-row">
-        <span><span class="type-badge ${v._t==='BWTS'?'tb-bwts':'tb-sox'}" style="margin-right:8px">${v._t}</span><b>${v.ship}</b><span style="font-size:11px;color:#9ba3bc;margin-left:6px">${v.imo||''}</span></span>
-        <span style="font-size:11px;color:#5a6480">${v._t==='BWTS'?(v.order25?'2025 수주':'견적'):(v.status||'-')}</span>
-      </div>`).join('')||'<p style="color:#9ba3bc;font-size:13px">해당 선주사의 데이터가 없습니다.</p>';
+    // 선주사모드: 선박 상세 테이블
+    document.getElementById('cOwnerSection').style.display='none';
+    document.getElementById('cOwnerDetail').style.display='block';
+    document.getElementById('cOwnerTitle').textContent=`${val} — 전체 선박 (BWTS ${bF.length}척 · SOX ${sF.length}건)`;
+
+    // 재계약 컨택 알림
+    const contactAlert = document.getElementById('cContactAlert');
+    if(needContact>0){
+      contactAlert.style.display='block';
+      contactAlert.textContent=`⚠️ 재계약 컨택 필요 ${needContact}척 — 2025년 수주 후 330일 경과, 2026년 견적 미발송`;
+    } else {
+      contactAlert.style.display='none';
+    }
+
+    const allV=[...bF.map(r=>({...r,_t:'BWTS'})),...sF.map(r=>({...r,_t:'SCRUBBER'}))];
+    // curData를 선주사 선박으로 설정 (장바구니 담기용)
+    const prevCurData=[...curData];
+    curData=allV;
+
+    document.getElementById('cVesselTb').innerHTML=allV.map((r,idx)=>{
+      const ib=r._t==='BWTS';
+      const inC=isInCart(r);
+      const needCtct=ib&&r.order25&&!r.est26&&(()=>{const d=parseDate25(r.date25);return d&&Math.floor((new Date()-d)/(1000*60*60*24))>=330;})();
+      return `<tr style="border-bottom:1px solid #f0f2f7;background:${needCtct?'#fff8f8':''}" onmouseover="this.style.background='${needCtct?'#fff0f0':'#f8f9ff'}'" onmouseout="this.style.background='${needCtct?'#fff8f8':''}'">
+        <td style="padding:9px 12px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
+        <td style="padding:9px 12px;font-weight:600;color:#0d1b3e">${r.ship}${needCtct?'<span style="margin-left:6px;font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:4px">컨택필요</span>':''}</td>
+        <td style="padding:9px 12px;font-size:11px;color:#9ba3bc;font-family:monospace">${r.imo||'-'}</td>
+        <td style="padding:9px 12px;font-size:11px;color:#5a6480">${r.project||r.system||'-'}</td>
+        <td style="padding:9px 12px;font-size:11px;font-family:monospace">${ib?(r.spec||'-'):(r.system||'-')}</td>
+        <td style="padding:9px 12px;text-align:center">${(ib&&r.order25)||(!ib&&r.status==='계약유효')?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:9px 12px;text-align:center">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:9px 12px;text-align:center">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:9px 12px;text-align:center"><button class="info-btn" onclick="openModal(${idx})" title="상세">i</button></td>
+        <td style="padding:9px 12px;text-align:center">
+          <button onclick="toggleCart(${idx});this.textContent=isInCart(curData[${idx}])?'×':'+';" style="width:22px;height:22px;border-radius:5px;border:1.5px solid #1e6fd9;background:#fff;cursor:pointer;font-size:13px;color:#1e6fd9;font-weight:700;font-family:inherit">${inC?'×':'+'}</button>
+        </td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="10" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
   }
 }
 
