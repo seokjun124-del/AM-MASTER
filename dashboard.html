@@ -326,14 +326,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
         </div>
         <div class="contract-body">
           <div class="contract-sub">
-            <div class="contract-sub-label">2025년 수주</div>
-            <div class="contract-sub-val" id="cs25" style="color:#1e6fd9">—</div>
-            <div class="contract-sub-pct" id="cs25p">— 가입률</div>
+            <div class="contract-sub-label">계약유효</div>
+            <div class="contract-sub-val" id="cs25" style="color:#10b981">—</div>
+            <div class="contract-sub-pct" id="cs25p">— 비율</div>
           </div>
           <div class="contract-sub">
-            <div class="contract-sub-label">2026년 수주</div>
-            <div class="contract-sub-val" id="cs26" style="color:#10b981">—</div>
-            <div class="contract-sub-pct" id="cs26p">— 가입률</div>
+            <div class="contract-sub-label">계약종료</div>
+            <div class="contract-sub-val" id="cs26" style="color:#f59e0b">—</div>
+            <div class="contract-sub-pct" id="cs26p">— 비율</div>
           </div>
         </div>
       </div>
@@ -397,12 +397,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
             <th style="width:36px"></th>
             <th>유형</th><th>IMO</th><th>선명</th>
             <th>프로젝트</th><th>선주사</th><th>국가</th>
-            <th>용량/센서</th><th>2025수주</th><th>2026견적</th><th>2026수주</th>
+            <th>도면번호</th><th>용량/센서</th><th>2025수주</th><th>2026견적</th><th>2026수주</th>
           </tr></thead>
           <tbody id="rTb"></tbody>
         </table>
       </div>
-      <div style="padding:10px 16px;font-size:12px;color:#7a85a3;border-top:1px solid #f0f2f7" id="rFooter"></div>
+      <div style="padding:10px 16px;font-size:12px;border-top:1px solid #f0f2f7" id="rFooter"></div>
     </div>
   </div>
 
@@ -455,29 +455,29 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 
 <!-- 모아보기 모달 -->
 <div class="modal-overlay" id="cartViewOverlay" onclick="closeCartViewModal(event)">
-  <div class="modal" style="width:1100px;max-width:98vw">
+  <div class="modal" style="width:95vw;max-width:95vw;max-height:90vh">
     <div class="modal-hd">
       <h2 id="cartViewTitle">선택 선박 모아보기</h2>
       <button class="modal-close" onclick="document.getElementById('cartViewOverlay').classList.remove('open')">✕</button>
     </div>
-    <div class="modal-bd" style="padding:12px 20px 20px;overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1000px;white-space:nowrap">
+    <div class="modal-bd" style="padding:12px 20px 20px;overflow-x:auto;overflow-y:auto;max-height:calc(90vh - 80px)">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed">
         <thead>
           <tr style="background:#f6f8fc;border-bottom:1.5px solid #eaecf5">
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">No.</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">IMO</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">프로젝트</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면번호</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">국가</th>
-            <th style="padding:10px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">용량/센서</th>
-            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2025수주</th>
-            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2026견적</th>
-            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2026수주</th>
-            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">상세</th>
-            <th style="padding:10px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">제거</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">No.</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">유형</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">IMO</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">선명</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">프로젝트</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">도면번호</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">선주사</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">국가</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#5a6480;font-weight:700">용량/센서</th>
+            <th style="padding:10px 12px;text-align:center;font-size:12px;color:#5a6480;font-weight:700">2025수주</th>
+            <th style="padding:10px 12px;text-align:center;font-size:12px;color:#5a6480;font-weight:700">2026견적</th>
+            <th style="padding:10px 12px;text-align:center;font-size:12px;color:#5a6480;font-weight:700">2026수주</th>
+            <th style="padding:10px 12px;text-align:center;font-size:12px;color:#5a6480;font-weight:700">상세</th>
+            <th style="padding:10px 12px;text-align:center;font-size:12px;color:#5a6480;font-weight:700">제거</th>
           </tr>
         </thead>
         <tbody id="cartViewBody"></tbody>
@@ -746,7 +746,7 @@ function initDash() {
   const b25 = BWTS.filter(r=>r.order25).length;
   const b26 = BWTS.filter(r=>r.order26).length;
   const s25 = SOX.filter(r=>r.status==='계약유효').length;
-  const s26 = SOX.filter(r=>r.order26||false).length;
+  const s26 = SOX.filter(r=>r.status==='계약종료').length;
   const pct = (n,d) => d>0 ? Math.round(n/d*100)+'%' : '0%';
 
   document.getElementById('cb25').textContent  = b25;
@@ -754,9 +754,9 @@ function initDash() {
   document.getElementById('cb26').textContent  = b26;
   document.getElementById('cb26p').textContent = `${pct(b26,totalBwts)} 가입률`;
   document.getElementById('cs25').textContent  = s25;
-  document.getElementById('cs25p').textContent = `${pct(s25,totalSox)} 가입률`;
+  document.getElementById('cs25p').textContent = `전체 ${totalSox}건 중 ${pct(s25,totalSox)}`;
   document.getElementById('cs26').textContent  = s26;
-  document.getElementById('cs26p').textContent = `${pct(s26,totalSox)} 가입률`;
+  document.getElementById('cs26p').textContent = `전체 ${totalSox}건 중 ${pct(s26,totalSox)}`;
 
   // ── 상위 선주사 20개 ──
   const om = {};
@@ -899,18 +899,40 @@ function allData() {
 function doMultiSearch() {
   const raw = document.getElementById('multiInput').value.trim();
   if (!raw) return;
-  // 탭, 줄바꿈, 쉼표로 분리
-  const terms = raw.split(/[\t\n\r,]+/).map(t => t.trim().toLowerCase()).filter(Boolean);
+  const terms = raw.split(/[\t\n\r,]+/).map(t => t.trim()).filter(Boolean);
   const all = allData();
-  curData = all.filter(r =>
-    terms.some(t =>
-      (r.ship||'').toLowerCase().includes(t) ||
-      (r.imo||'').toLowerCase().includes(t) ||
-      (r.owner||'').toLowerCase().includes(t) ||
-      (r.project||'').toLowerCase().includes(t)
-    )
-  );
-  renderRTable(curData);
+  const matched = [];
+  const unmatched = [];
+
+  terms.forEach(term => {
+    const tl = term.toLowerCase();
+    const found = all.filter(r =>
+      (r.ship||'').toLowerCase().includes(tl) ||
+      (r.imo||'').toLowerCase().includes(tl) ||
+      (r.owner||'').toLowerCase().includes(tl) ||
+      (r.project||'').toLowerCase().includes(tl)
+    );
+    if (found.length > 0) {
+      found.forEach(f => { if (!matched.find(m => m.ship===f.ship && m._t===f._t)) matched.push(f); });
+    } else {
+      unmatched.push(term);
+    }
+  });
+
+  curData = matched;
+  renderRTable(matched);
+
+  // 미매칭 표시
+  const footer = document.getElementById('rFooter');
+  if (unmatched.length > 0) {
+    footer.innerHTML = `
+      <div style="color:#5a6480">${terms.length}개 입력 중 <span style="color:#10b981;font-weight:700">${matched.length}개</span> 검색됨 · <span style="color:#ef4444;font-weight:700">${unmatched.length}개 미매칭</span></div>
+      <div style="margin-top:6px;padding:8px 12px;background:#fee2e2;border-radius:8px;font-size:11px;color:#b91c1c">
+        <b>미매칭 항목:</b> ${unmatched.map(u=>`<span style="background:#fecaca;padding:1px 6px;border-radius:4px;margin:2px">${u}</span>`).join(' ')}
+      </div>`;
+  } else {
+    footer.innerHTML = `<span style="color:#10b981;font-weight:700">${terms.length}개 입력 중 ${matched.length}개 모두 검색됨 ✓</span>`;
+  }
 }
 
 function doSearch() {
@@ -1082,6 +1104,7 @@ function renderRTable(data) {
       <td style="font-size:11px;color:#5a6480">${r.project||r.system||'-'}</td>
       <td style="font-size:11px">${r.owner}</td>
       <td style="font-size:11px">${r.country}</td>
+      <td style="font-size:11px;font-family:monospace">${ib?(r.drawNo||'-'):'-'}</td>
       <td style="font-size:11px;font-family:monospace">${r.spec||r.system||'-'}</td>
       <td style="text-align:center">${(ib&&r.order25)||(!ib&&r.status==='계약유효')?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
       <td style="text-align:center">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
@@ -1098,7 +1121,6 @@ function openModal(idx) {
 
   const secTitle = (txt, color='#1e6fd9') =>
     `<h3 style="font-size:16px;font-weight:700;color:${color};text-transform:none;letter-spacing:0;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #e8ecf5">${txt}</h3>`;
-
   const chk = v => v ? `<span style="color:#10b981;font-size:16px">✓</span>` : `<span style="color:#d1d5e0">—</span>`;
 
   if (ib) {
@@ -1110,8 +1132,6 @@ function openModal(idx) {
           <div class="m-item"><label>유형</label><span><span class="type-badge tb-bwts">BWTS</span></span></div>
           <div class="m-item"><label>선명</label><span>${r.ship}</span></div>
           <div class="m-item"><label>프로젝트</label><span>${r.project||'-'}</span></div>
-          <div class="m-item"><label>용량 / SPEC</label><span>${r.spec||'-'}</span></div>
-          <div class="m-item"><label>선종</label><span>${r.type||'-'}</span></div>
         </div>
       </div>
       <div class="m-section">
@@ -1122,8 +1142,10 @@ function openModal(idx) {
         </div>
       </div>
       <div class="m-section">
-        ${secTitle('센서 / 스펙')}
+        ${secTitle('BWTS 정보')}
         <div class="m-grid">
+          <div class="m-item"><label>용량 / SPEC</label><span>${r.spec||'-'}</span></div>
+          <div class="m-item"><label>도면번호</label><span>${r.drawNo||'-'}</span></div>
           <div class="m-item"><label>PT</label><span>${r.pt||'-'}</span></div>
           <div class="m-item"><label>PT 센서 미터수</label><span>${r.mtr ? r.mtr+'MTR' : '-'}</span></div>
           <div class="m-item"><label>TT SENSOR</label><span>${r.tt||'-'}</span></div>
@@ -1136,11 +1158,10 @@ function openModal(idx) {
         ${secTitle('수주 현황')}
         <div style="background:#f6f8fc;border-radius:10px;padding:12px 14px;margin-bottom:10px">
           <div style="font-size:12px;font-weight:700;color:#1e6fd9;margin-bottom:10px">2025년</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
             <div class="m-item"><label>견적</label><span>${chk(r.order25)}</span></div>
             <div class="m-item"><label>수주</label><span>${chk(r.order25)}</span></div>
             <div class="m-item"><label>실행일</label><span style="font-size:12px">${r.date25||'-'}</span></div>
-            <div class="m-item"><label>&nbsp;</label><span></span></div>
           </div>
         </div>
         <div style="background:#f6f8fc;border-radius:10px;padding:12px 14px">
@@ -1164,8 +1185,6 @@ function openModal(idx) {
           <div class="m-item"><label>유형</label><span><span class="type-badge tb-sox">SCRUBBER</span></span></div>
           <div class="m-item"><label>선명</label><span>${r.ship}</span></div>
           <div class="m-item"><label>프로젝트</label><span>${r.project||'-'}</span></div>
-          <div class="m-item"><label>시스템</label><span>${r.system||'-'}</span></div>
-          <div class="m-item"><label>선종</label><span>${r.type||'-'}</span></div>
         </div>
       </div>
       <div class="m-section">
@@ -1176,9 +1195,10 @@ function openModal(idx) {
         </div>
       </div>
       <div class="m-section">
-        ${secTitle('SOX Scrubber 정보')}
+        ${secTitle('SOX SCRUBBER 정보')}
         <div class="m-grid">
-          <div class="m-item full"><label>OTP DATE</label><span>${r.otp||'-'}</span></div>
+          <div class="m-item"><label>시스템</label><span>${r.system||'-'}</span></div>
+          <div class="m-item"><label>OTP DATE</label><span>${r.otp||'-'}</span></div>
           <div class="m-item"><label>TUR SENSOR</label><span>${r.inTur||'-'} × ${r.tur||'-'} EA</span></div>
           <div class="m-item"><label>PAH SENSOR</label><span>${r.inPah||'-'} × ${r.pah||'-'} EA</span></div>
         </div>
@@ -1186,7 +1206,7 @@ function openModal(idx) {
       <div class="m-section">
         ${secTitle('수주 현황')}
         <div class="m-grid">
-          <div class="m-item full"><label>계약 STATUS</label><span style="color:${statusColor};font-size:13px">${r.status||'-'}</span></div>
+          <div class="m-item full"><label>계약 STATUS</label><span style="font-weight:700;color:${statusColor};font-size:14px">${r.status||'-'}</span></div>
           <div class="m-item full"><label>계약 금액</label><span>${r.cAmt||'-'}</span></div>
           ${r.remark?`<div class="m-item full"><label>계약 REMARK</label><span style="font-size:12px;color:#5a6480">${r.remark}</span></div>`:''}
         </div>
