@@ -13,14 +13,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 
 /* SIDEBAR 접기/펼치기 */
 .sidebar{width:220px;height:100vh;background:#0d1b3e;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;overflow-y:auto;overflow-x:hidden;transition:width 0.25s ease}
-.sidebar.collapsed{width:56px}
-.sidebar.collapsed .nav-text{display:none}
-.sidebar.collapsed .nav-item{justify-content:center;padding:10px}
+.sidebar.collapsed{width:52px}
+.sidebar.collapsed .nav-text{display:none !important}
+.sidebar.collapsed .nav-icon-only{display:flex !important}
+.sidebar.collapsed .nav-item{justify-content:center;padding:10px 0}
 .sidebar.collapsed .nav-item svg{margin:0}
-.sidebar.collapsed .sidebar-logo{padding:14px 8px}
-.sidebar.collapsed .sidebar-ext{padding:8px}
-.sidebar.collapsed .ext-link{justify-content:center}
+.sidebar.collapsed .sidebar-logo{padding:10px 6px}
+.sidebar.collapsed .sidebar-ext{padding:8px 4px}
+.sidebar.collapsed .ext-link{justify-content:center;padding:8px 0}
+.sidebar.collapsed .sidebar-section-label{display:none}
+.sidebar.collapsed .dashboard-title{display:none}
 .sidebar-logo{padding:16px 14px 14px;border-bottom:1px solid rgba(255,255,255,0.08);transition:all 0.25s}
+.dashboard-title{background:rgba(30,111,217,0.3);border:1px solid rgba(30,111,217,0.5);border-radius:8px;padding:8px 10px;text-align:center;margin-top:8px}
 .brand{display:flex;align-items:center;gap:10px}
 .brand-icon{width:36px;height:36px;background:linear-gradient(135deg,#1e6fd9,#00b4d8);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .brand-icon svg{width:20px;height:20px;fill:white}
@@ -119,7 +123,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 .results-header{padding:11px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;display:flex;justify-content:space-between;align-items:center}
 .results-count{font-size:12px;color:#5a6480;font-weight:600}
 .r-table{width:100%;border-collapse:collapse;font-size:12px;min-width:800px}
-.r-table th{background:#f6f8fc;padding:9px 12px;text-align:left;font-weight:700;color:#5a6480;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #eaecf5;white-space:nowrap}
+.r-table th{padding:9px 12px;text-align:left;font-weight:700;color:#5a6480;font-size:11px;letter-spacing:0.5px;border-bottom:1px solid #eaecf5;white-space:nowrap;background:#f6f8fc}
+.r-table thead tr:first-child th{background:#0d1b3e;color:rgba(255,255,255,0.7);font-size:10px;padding:6px 12px;text-transform:uppercase}
 .r-table td{padding:10px 12px;border-bottom:1px solid #f0f2f7;color:#2d3650;vertical-align:middle}
 .r-table tr:last-child td{border-bottom:none}
 .r-table tr:hover td{background:#f8f9ff}
@@ -180,23 +185,21 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
 <!-- SIDEBAR -->
 <nav class="sidebar" id="sidebar">
   <!-- 토글 버튼 -->
-  <button onclick="toggleSidebar()" id="sidebarToggle" style="position:absolute;top:14px;right:-14px;width:28px;height:28px;background:#1e6fd9;border:none;border-radius:50%;cursor:pointer;z-index:200;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
-    <svg id="toggleIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+  <button onclick="toggleSidebar()" id="sidebarToggle" style="position:absolute;top:16px;right:-12px;width:24px;height:24px;background:#1e6fd9;border:none;border-radius:4px;cursor:pointer;z-index:200;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:11px;font-weight:700;color:#fff;font-family:inherit">
+    <span id="toggleIcon">&lt;&lt;</span>
   </button>
 
   <div class="sidebar-logo">
-    <!-- PANASIA 로고 -->
-    <div style="text-align:center;padding:4px 0 10px">
-      <img src="https://www.panasia.co.kr/web/images/common/logo_w.png" alt="PANASIA" style="height:28px;max-width:100%;object-fit:contain" onerror="this.style.display='none';document.getElementById('panasiaTxt').style.display='block'">
+    <div style="text-align:center;padding:4px 0 6px">
+      <img src="https://www.panasia.co.kr/web/images/common/logo_w.png" alt="PANASIA" style="height:26px;max-width:100%;object-fit:contain" onerror="this.style.display='none';document.getElementById('panasiaTxt').style.display='block'">
       <div id="panasiaTxt" style="display:none;color:#fff;font-size:18px;font-weight:900;letter-spacing:2px">PANASIA</div>
     </div>
-    <!-- AM 영업팀 DASHBOARD -->
-    <div style="background:rgba(30,111,217,0.3);border:1px solid rgba(30,111,217,0.5);border-radius:8px;padding:8px 10px;text-align:center">
-      <div style="color:#fff;font-size:11px;font-weight:800;letter-spacing:1px;line-height:1.4">AM 영업팀<br>DASHBOARD</div>
+    <div class="dashboard-title">
+      <div class="nav-text" style="color:#fff;font-size:11px;font-weight:800;letter-spacing:1px;line-height:1.4">AM 영업팀<br>DASHBOARD</div>
     </div>
   </div>
 
-  <div class="sidebar-section-label nav-text">메뉴</div>
+  <div class="sidebar-section-label nav-text" style="padding:12px 14px 4px;font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;letter-spacing:1px;text-transform:uppercase">메뉴</div>
   <button class="nav-item active" onclick="showPage('dashboard',this)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     <span class="nav-text">대시보드</span>
@@ -211,7 +214,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
   </button>
 
   <div class="sidebar-ext">
-    <div class="ext-label nav-text">외부 링크</div>
+    <div class="nav-text" style="padding:12px 14px 4px;font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;letter-spacing:1px;text-transform:uppercase">외부 링크</div>
     <a class="ext-link" href="https://docs.google.com/spreadsheets/d/13mvFbhAR_RJ95mt-HQy_lC_q9AmI0NIdEbo1XJvcZPc/edit" target="_blank">
       <span class="nav-text">AM영업 SHEET</span>
       <span class="ext-badge nav-text">새탭</span>
@@ -221,7 +224,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
       <span class="ext-badge nav-text">새탭</span>
     </a>
     <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)">
-      <div id="lastUpdated" class="nav-text" style="font-size:10px;color:rgba(255,255,255,0.3);padding:0 2px 8px;line-height:1.5">불러오는 중...</div>
+      <div id="lastUpdated" class="nav-text" style="font-size:10px;color:rgba(255,255,255,0.3);padding:0 14px 8px;line-height:1.5">불러오는 중...</div>
       <button onclick="loadData()" style="width:100%;padding:7px;background:rgba(30,111,217,0.3);border:1px solid rgba(30,111,217,0.5);border-radius:7px;color:rgba(255,255,255,0.7);font-size:11px;cursor:pointer;font-family:inherit">
         <span class="nav-text">🔄 데이터 새로고침</span>
         <span class="nav-icon-only" style="display:none">🔄</span>
@@ -494,40 +497,40 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
           </div>
           <!-- 컨택 필요 알림 -->
           <div id="cContactAlert" style="display:none;background:#fff1f1;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#b91c1c;font-weight:600"></div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
-            <div style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e" id="cOwnerTitle"></div>
+          <div id="cOwnerTitle" style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e;border-radius:12px 12px 0 0;border:1px solid #e8ecf5;border-bottom:none"></div>
+          <!-- 단일 선주사 테이블 -->
+          <div id="cSingleOwnerWrap" style="background:#fff;border-radius:0 0 12px 12px;border:1px solid #e8ecf5;border-top:none;overflow:hidden">
             <div style="overflow-x:auto">
               <table style="width:100%;border-collapse:collapse;font-size:12px">
                 <thead>
-                  <!-- 섹션 그룹 헤더 -->
                   <tr style="background:#0d1b3e">
-                    <th colspan="4" style="padding:6px 12px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선박 정보</th>
-                    <th colspan="2" style="padding:6px 12px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선주사 정보</th>
-                    <th colspan="4" style="padding:6px 12px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">장비 정보</th>
-                    <th colspan="4" style="padding:6px 12px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600">수주 현황</th>
+                    <th colspan="5" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선박 정보</th>
+                    <th colspan="2" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선주사 정보</th>
+                    <th colspan="3" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">장비 정보</th>
+                    <th colspan="3" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600">수주 현황</th>
                   </tr>
-                  <!-- 컬럼 헤더 -->
                   <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
-                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700;width:36px">담기</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">IMO</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">국가</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">용량/시스템</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면/OTP</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">센서정보</th>
-                    <th style="padding:9px 12px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">프로젝트</th>
-                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700">2025수주</th>
-                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">2025실행일</th>
-                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#10b981;font-weight:700">2026견적</th>
-                    <th style="padding:9px 12px;text-align:center;font-size:11px;color:#10b981;font-weight:700">2026수주</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#5a6480;font-weight:700;width:32px">담기</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">IMO</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">프로젝트</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">국가</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">장비SPEC</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면/OTP</th>
+                    <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700;min-width:60px">2025수주</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:60px">2026견적</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:60px">2026수주</th>
                   </tr>
                 </thead>
                 <tbody id="cVesselTb"></tbody>
               </table>
             </div>
           </div>
+          <!-- 다중 선주사 아코디언 컨테이너 -->
+          <div id="cAccordionWrap" style="display:none"></div>
         </div>
       </div>
     </div>
@@ -840,9 +843,7 @@ function toggleSidebar(){
   const icon=document.getElementById('toggleIcon');
   const collapsed=sb.classList.toggle('collapsed');
   main.style.marginLeft=collapsed?'56px':'220px';
-  icon.innerHTML=collapsed
-    ?'<path d="M9 18l6-6-6-6"/>'
-    :'<path d="M15 18l-6-6 6-6"/>';
+  icon.innerHTML=collapsed?'&gt;&gt;':'&lt;&lt;';
 }
 
 // ======================== DASHBOARD ========================
@@ -864,7 +865,7 @@ function initDash() {
   // ── 계약 현황 ──
   const b25 = BWTS.filter(r=>r.order25).length;
   const b26 = BWTS.filter(r=>r.order26).length;
-  const s25 = SOX.filter(r=>r.status==='계약유효').length;
+  const s25 = SOX.filter(r=>r.status==='Active'||r.status==='계약유효').length;
   const s26 = SOX.filter(r=>r.status==='계약종료').length;
   const pct = (n,d) => d>0 ? Math.round(n/d*100)+'%' : '0%';
 
@@ -1459,41 +1460,68 @@ function showMultiOwner(){
         <span id="acc-icon-${oid}" style="color:#9ba3bc;font-size:16px">▼</span>
       </div>
       <div id="acc-${oid}" style="display:none;overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">`;
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
+          <thead>
+            <tr style="background:#0d1b3e">
+              <th colspan="5" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선박 정보</th>
+              <th colspan="2" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선주사 정보</th>
+              <th colspan="3" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">장비 정보</th>
+              <th colspan="3" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600">수주 현황</th>
+            </tr>
+            <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#5a6480;font-weight:700;width:32px">담기</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">유형</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">IMO</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">선명</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">프로젝트</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">선주사</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">국가</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">장비SPEC</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">도면번호</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#1e6fd9;font-weight:700;min-width:55px">2025수주</th>
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#10b981;font-weight:700;min-width:55px">2026견적</th>
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#10b981;font-weight:700;min-width:55px">2026수주</th>
+            </tr>
+          </thead>
+          <tbody>`;
 
     vessels.forEach((r)=>{
       const idx=globalIdx++;
       const ib=r._t==='BWTS';
       const inC=isInCart(r);
       const needCtct=ib&&r.order25&&!r.est26&&(()=>{const d=parseDate25(r.date25);return d&&Math.floor((new Date()-d)/(1000*60*60*24))>=330;})();
-      const equipSpec=ib?(r.spec||'-'):(r.system||'-');
-      const equipDoc=ib?(r.drawNo||'-'):(r.otp||'-');
-      const equipSensor=ib
-        ?[r.pt?`PT:${r.pt}`:'',r.tt?`TT:${r.tt}`:'',r.uvi?`UVI:${r.uvi}`:'',r.fmu?`FMU:${r.fmu}`:''].filter(Boolean).join(' ')||'-'
-        :[r.inTur&&r.tur?`TUR:${r.inTur}×${r.tur}EA`:'',r.inPah&&r.pah?`PAH:${r.inPah}×${r.pah}EA`:''].filter(Boolean).join(' ')||'-';
+      const mkTag=(s,bg,cl)=>`<span style="background:${bg};padding:1px 5px;border-radius:4px;margin:1px;display:inline-block;font-size:10px;${cl?'color:'+cl:''}">${s}</span>`;
+      const specSys=ib?(r.spec||'-'):(r.system||'-');
+      const drawOtp=ib?(r.drawNo||'-'):(r.otp||'-');
+      const sensor=ib
+        ?[r.pt?`PT:${r.pt}`:'',r.tt?`TT:${r.tt}`:'',r.uvi?`UVI:${r.uvi}`:'',r.fmu?`FMU:${r.fmu}`:''].filter(Boolean).map(s=>mkTag(s,'#f0f2f7','')).join('')||'-'
+        :[r.inTur&&r.tur?`TUR:${r.inTur}×${r.tur}EA`:'',r.inPah&&r.pah?`PAH:${r.inPah}×${r.pah}EA`:''].filter(Boolean).map(s=>mkTag(s,'#d1fae5','#065f46')).join('')||'-';
+      const isActive=(ib&&r.order25)||(!ib&&(r.status==='Active'||r.status==='계약유효'));
       html+=`<tr style="border-bottom:1px solid #f0f2f7;background:${needCtct?'#fff8f8':''}">
-        <td style="padding:8px 12px;text-align:center;width:36px">
-          <input type="checkbox" ${inC?'checked':''} onchange="toggleCartByCheck(this,${idx})" style="width:16px;height:16px;cursor:pointer;accent-color:#1e6fd9">
-        </td>
-        <td style="padding:8px 10px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
-        <td style="padding:8px 10px;font-weight:600;color:#0d1b3e;white-space:nowrap">${r.ship}${needCtct?'<span style="margin-left:4px;font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 4px;border-radius:3px">컨택필요</span>':''}</td>
-        <td style="padding:8px 10px;font-size:11px;color:#9ba3bc;border-right:2px solid #e8ecf5">${r.imo||'-'}</td>
-        <td style="padding:8px 10px;font-size:11px">${equipSpec}</td>
-        <td style="padding:8px 10px;font-size:11px;color:#5a6480">${equipDoc}</td>
-        <td style="padding:8px 10px;font-size:11px;color:#5a6480;border-right:2px solid #e8ecf5">${equipSensor}</td>
-        <td style="padding:8px 10px;text-align:center">${(ib&&r.order25)||(!ib&&r.status==='계약유효')?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
-        <td style="padding:8px 10px;font-size:11px;text-align:center;color:#5a6480">${ib?(r.date25||'-'):(r.status||'-')}</td>
-        <td style="padding:8px 10px;text-align:center">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
-        <td style="padding:8px 10px;text-align:center">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:7px 8px;text-align:center"><input type="checkbox" ${inC?'checked':''} onchange="toggleCartByCheck(this,${idx})" style="width:15px;height:15px;cursor:pointer;accent-color:#1e6fd9"></td>
+        <td style="padding:7px 8px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
+        <td style="padding:7px 8px;font-size:11px;color:#9ba3bc;font-family:monospace">${r.imo||'-'}</td>
+        <td style="padding:7px 8px;font-weight:600;color:#0d1b3e;white-space:nowrap">${r.ship}<button class="info-btn" onclick="openModal(${idx})" title="상세">i</button>${needCtct?'<span style="margin-left:4px;font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 4px;border-radius:3px">컨택필요</span>':''}</td>
+        <td style="padding:7px 8px;font-size:11px;color:#5a6480;border-right:2px solid #e8ecf5">${r.project||r.system||'-'}</td>
+        <td style="padding:7px 8px;font-size:11px">${r.owner}</td>
+        <td style="padding:7px 8px;font-size:11px;border-right:2px solid #e8ecf5">${r.country||'-'}</td>
+        <td style="padding:7px 8px;font-size:11px;font-family:monospace">${specSys}</td>
+        <td style="padding:7px 8px;font-size:11px;color:#5a6480">${drawOtp}</td>
+        <td style="padding:7px 8px;border-right:2px solid #e8ecf5">${sensor}</td>
+        <td style="padding:7px 8px;text-align:center;min-width:55px">${isActive?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:7px 8px;text-align:center;min-width:55px">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:7px 8px;text-align:center;min-width:55px">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
       </tr>`;
     });
-    html+=`</table></div></div>`;
+    html+=`</tbody></table></div></div>`;
   });
 
-  // 아코디언을 테이블 래퍼 자리에 렌더링
-  const wrap=document.getElementById('cOwnerDetail').querySelector('div[style*="background:#fff"]');
-  if(wrap) wrap.querySelector('div[style*="overflow-x"]').innerHTML=`<div style="padding:12px">${html}</div>`;
-  else document.getElementById('cVesselTb').innerHTML='';
+  // 아코디언을 전용 컨테이너에 렌더링
+  document.getElementById('cSingleOwnerWrap').style.display='none';
+  const accWrap = document.getElementById('cAccordionWrap');
+  accWrap.style.display='block';
+  accWrap.innerHTML = html;
   updateCartBadge2();
 }
 
@@ -1602,6 +1630,9 @@ function showOwnerVessels(owner, fromCountry){
 
   document.getElementById('cOwnerSection').style.display='none';
   document.getElementById('cOwnerDetail').style.display='block';
+  // 단일 선주사 모드: 단일 테이블 표시, 아코디언 숨김
+  document.getElementById('cSingleOwnerWrap').style.display='block';
+  document.getElementById('cAccordionWrap').style.display='none';
 
   const bF=BWTS.filter(r=>r.owner===owner);
   const sF=SOX.filter(r=>r.owner===owner);
@@ -1627,38 +1658,29 @@ function showOwnerVessels(owner, fromCountry){
     const ib=r._t==='BWTS';
     const inC=isInCart(r);
     const needCtct=ib&&r.order25&&!r.est26&&(()=>{const d=parseDate25(r.date25);return d&&Math.floor((new Date()-d)/(1000*60*60*24))>=330;})();
-    // 장비 정보 컬럼
-    const equipSpec = ib ? (r.spec||'-') : (r.system||'-');
-    const equipDoc  = ib ? (r.drawNo||'-') : (r.otp||'-');
-    const equipSensor = ib
-      ? [r.pt?`PT:${r.pt}`:'', r.tt?`TT:${r.tt}`:'', r.uvi?`UVI:${r.uvi}`:'', r.fmu?`FMU:${r.fmu}`:''].filter(Boolean).join(' ') || '-'
-      : [r.inTur&&r.tur?`TUR:${r.inTur}×${r.tur}EA`:'', r.inPah&&r.pah?`PAH:${r.inPah}×${r.pah}EA`:''].filter(Boolean).join(' ') || '-';
-    // 수주현황
-    const s25 = ib ? ((r.order25)?'<span class="chk">✓</span>':'<span class="dsh">-</span>') : (r.status==='계약유효'?'<span class="chk">✓</span>':'<span class="dsh">-</span>');
-    const d25 = ib ? (r.date25||'-') : (r.status||'-');
-    const s26e = ib ? (r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>') : '';
-    const s26o = ib ? (r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>') : '';
-
-    return `<tr id="cvrow-${idx}" style="border-bottom:1px solid #f0f2f7;background:${needCtct?'#fff8f8':''}" onmouseover="this.style.background='${needCtct?'#fff0f0':'#f8f9ff'}'" onmouseout="this.style.background='${needCtct?'#fff8f8':''}'">
-      <td style="padding:9px 12px;text-align:center">
-        <input type="checkbox" ${inC?'checked':''} onchange="toggleCartByCheck(this,${idx})" style="width:16px;height:16px;cursor:pointer;accent-color:#1e6fd9">
-      </td>
-      <td style="padding:9px 12px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
-      <td style="padding:9px 12px;font-weight:600;color:#0d1b3e;white-space:nowrap">${r.ship}${needCtct?'<span style="margin-left:6px;font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 5px;border-radius:4px">컨택필요</span>':''}</td>
-      <td style="padding:9px 12px;font-size:11px;color:#9ba3bc;font-family:monospace;border-right:2px solid #e8ecf5">${r.imo||'-'}</td>
-      <td style="padding:9px 12px;font-size:11px;color:#0d1b3e">${r.owner}</td>
-      <td style="padding:9px 12px;font-size:11px;color:#5a6480;border-right:2px solid #e8ecf5">${r.country||'-'}</td>
-      <td style="padding:9px 12px;font-size:11px;font-family:monospace">${equipSpec}</td>
-      <td style="padding:9px 12px;font-size:11px;color:#5a6480">${equipDoc}</td>
-      <td style="padding:9px 12px;font-size:11px;color:#5a6480">${equipSensor}</td>
-      <td style="padding:9px 12px;font-size:11px;color:#5a6480;border-right:2px solid #e8ecf5">${r.project||r.system||'-'}</td>
-      <td style="padding:9px 12px;text-align:center">${s25}</td>
-      <td style="padding:9px 12px;font-size:11px;text-align:center;color:#5a6480">${d25}</td>
-      <td style="padding:9px 12px;text-align:center">${s26e}</td>
-      <td style="padding:9px 12px;text-align:center">${s26o}</td>
+    const mkTag=(s,bg,cl)=>`<span style="background:${bg};padding:1px 5px;border-radius:4px;margin:1px;display:inline-block;font-size:10px;${cl?'color:'+cl:''}">${s}</span>`;
+    const specSys=ib?(r.spec||'-'):(r.system||'-');
+    const drawOtp=ib?(r.drawNo||'-'):(r.otp||'-');
+    const sensor=ib
+      ?[r.pt?`PT:${r.pt}`:'',r.tt?`TT:${r.tt}`:'',r.uvi?`UVI:${r.uvi}`:'',r.fmu?`FMU:${r.fmu}`:''].filter(Boolean).map(s=>mkTag(s,'#f0f2f7','')).join('')||'-'
+      :[r.inTur&&r.tur?`TUR:${r.inTur}×${r.tur}EA`:'',r.inPah&&r.pah?`PAH:${r.inPah}×${r.pah}EA`:''].filter(Boolean).map(s=>mkTag(s,'#d1fae5','#065f46')).join('')||'-';
+    const isActive=(ib&&r.order25)||(!ib&&(r.status==='Active'||r.status==='계약유효'));
+    return `<tr style="border-bottom:1px solid #f0f2f7;background:${needCtct?'#fff8f8':''}" onmouseover="this.style.background='${needCtct?'#fff0f0':'#f8f9ff'}'" onmouseout="this.style.background='${needCtct?'#fff8f8':''}'">
+      <td style="padding:7px 8px;text-align:center"><input type="checkbox" ${inC?'checked':''} onchange="toggleCartByCheck(this,${idx})" style="width:15px;height:15px;cursor:pointer;accent-color:#1e6fd9"></td>
+      <td style="padding:7px 8px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
+      <td style="padding:7px 8px;font-size:11px;color:#9ba3bc;font-family:monospace">${r.imo||'-'}</td>
+      <td style="padding:7px 8px;font-weight:600;color:#0d1b3e;white-space:nowrap">${r.ship}<button class="info-btn" onclick="openModal(${idx})" title="상세">i</button>${needCtct?'<span style="margin-left:4px;font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 4px;border-radius:3px">컨택필요</span>':''}</td>
+      <td style="padding:7px 8px;font-size:11px;color:#5a6480;border-right:2px solid #e8ecf5">${r.project||r.system||'-'}</td>
+      <td style="padding:7px 8px;font-size:11px">${r.owner}</td>
+      <td style="padding:7px 8px;font-size:11px;border-right:2px solid #e8ecf5">${r.country||'-'}</td>
+      <td style="padding:7px 8px;font-size:11px;font-family:monospace">${specSys}</td>
+      <td style="padding:7px 8px;font-size:11px;color:#5a6480">${drawOtp}</td>
+      <td style="padding:7px 8px;border-right:2px solid #e8ecf5">${sensor}</td>
+      <td style="padding:7px 8px;text-align:center;min-width:60px">${isActive?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:7px 8px;text-align:center;min-width:60px">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:7px 8px;text-align:center;min-width:60px">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
     </tr>`;
-  }).join('')||'<tr><td colspan="14" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
-
+  }).join('')||'<tr><td colspan="13" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
   updateCartBadge2();
 }
 
