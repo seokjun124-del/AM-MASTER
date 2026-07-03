@@ -497,8 +497,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
           </div>
           <!-- 컨택 필요 알림 -->
           <div id="cContactAlert" style="display:none;background:#fff1f1;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#b91c1c;font-weight:600"></div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
-            <div style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e" id="cOwnerTitle"></div>
+          <div id="cOwnerTitle" style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e;border-radius:12px 12px 0 0;border:1px solid #e8ecf5;border-bottom:none"></div>
+          <!-- 단일 선주사 테이블 -->
+          <div id="cSingleOwnerWrap" style="background:#fff;border-radius:0 0 12px 12px;border:1px solid #e8ecf5;border-top:none;overflow:hidden">
             <div style="overflow-x:auto">
               <table style="width:100%;border-collapse:collapse;font-size:12px">
                 <thead>
@@ -506,7 +507,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
                     <th colspan="5" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선박 정보</th>
                     <th colspan="2" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선주사 정보</th>
                     <th colspan="3" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">장비 정보</th>
-                    <th colspan="3" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600">수주 현황</th>
+                    <th colspan="4" style="padding:6px 10px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600">수주 현황</th>
                   </tr>
                   <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
                     <th style="padding:8px 8px;text-align:center;font-size:11px;color:#5a6480;font-weight:700;width:32px">담기</th>
@@ -519,15 +520,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
                     <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">장비SPEC</th>
                     <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면/OTP</th>
                     <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
-                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700;min-width:60px">2025수주</th>
-                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:60px">2026견적</th>
-                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:60px">2026수주</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700;min-width:55px">2025수주</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700;min-width:70px">2025승선일</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:55px">2026견적</th>
+                    <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:55px">2026수주</th>
                   </tr>
                 </thead>
                 <tbody id="cVesselTb"></tbody>
               </table>
             </div>
           </div>
+          <!-- 다중 선주사 아코디언 컨테이너 -->
+          <div id="cAccordionWrap" style="display:none"></div>
         </div>
       </div>
     </div>
@@ -1457,41 +1461,70 @@ function showMultiOwner(){
         <span id="acc-icon-${oid}" style="color:#9ba3bc;font-size:16px">▼</span>
       </div>
       <div id="acc-${oid}" style="display:none;overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">`;
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px">
+          <thead>
+            <tr style="background:#0d1b3e">
+              <th colspan="5" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선박 정보</th>
+              <th colspan="2" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">선주사 정보</th>
+              <th colspan="3" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600;border-right:2px solid rgba(255,255,255,0.2)">장비 정보</th>
+              <th colspan="4" style="padding:5px 8px;text-align:center;font-size:10px;color:rgba(255,255,255,0.6);font-weight:600">수주 현황</th>
+            </tr>
+            <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#5a6480;font-weight:700;width:32px">담기</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">유형</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">IMO</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">선명</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">프로젝트</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">선주사</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">국가</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">장비SPEC</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">도면번호</th>
+              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#1e6fd9;font-weight:700;min-width:50px">2025수주</th>
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#1e6fd9;font-weight:700;min-width:65px">2025승선일</th>
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#10b981;font-weight:700;min-width:50px">2026견적</th>
+              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#10b981;font-weight:700;min-width:50px">2026수주</th>
+            </tr>
+          </thead>
+          <tbody>`;
 
     vessels.forEach((r)=>{
       const idx=globalIdx++;
       const ib=r._t==='BWTS';
       const inC=isInCart(r);
       const needCtct=ib&&r.order25&&!r.est26&&(()=>{const d=parseDate25(r.date25);return d&&Math.floor((new Date()-d)/(1000*60*60*24))>=330;})();
-      const equipSpec=ib?(r.spec||'-'):(r.system||'-');
-      const equipDoc=ib?(r.drawNo||'-'):(r.otp||'-');
-      const equipSensor=ib
-        ?[r.pt?`PT:${r.pt}`:'',r.tt?`TT:${r.tt}`:'',r.uvi?`UVI:${r.uvi}`:'',r.fmu?`FMU:${r.fmu}`:''].filter(Boolean).join(' ')||'-'
-        :[r.inTur&&r.tur?`TUR:${r.inTur}×${r.tur}EA`:'',r.inPah&&r.pah?`PAH:${r.inPah}×${r.pah}EA`:''].filter(Boolean).join(' ')||'-';
+      const mkTag=(s,bg,cl)=>`<span style="background:${bg};padding:1px 5px;border-radius:4px;margin:1px;display:inline-block;font-size:10px;${cl?'color:'+cl:''}">${s}</span>`;
+      const specSys=ib?(r.spec||'-'):(r.system||'-');
+      const drawOtp=ib?(r.drawNo||'-'):(r.otp||'-');
+      const sensor=ib
+        ?[r.pt&&parseInt(r.pt)?`PT:${r.pt}`:'',r.tt&&parseInt(r.tt)?`TT:${r.tt}`:'',r.tt_ex&&parseInt(r.tt_ex)?`TT(EX):${r.tt_ex}`:'',r.uvi&&parseInt(r.uvi)?`UVI:${r.uvi}`:'',r.fmu&&parseInt(r.fmu)?`FMU:${r.fmu}`:''].filter(Boolean).map(s=>mkTag(s,'#f0f2f7','')).join('')||'-'
+        :[r.inTur&&r.tur?`TUR:${r.inTur}×${r.tur}EA`:'',r.inPah&&r.pah?`PAH:${r.inPah}×${r.pah}EA`:''].filter(Boolean).map(s=>mkTag(s,'#d1fae5','#065f46')).join('')||'-';
+      const isActive=(ib&&r.order25)||(!ib&&(r.status==='Active'||r.status==='계약유효'));
       html+=`<tr style="border-bottom:1px solid #f0f2f7;background:${needCtct?'#fff8f8':''}">
-        <td style="padding:8px 12px;text-align:center;width:36px">
-          <input type="checkbox" ${inC?'checked':''} onchange="toggleCartByCheck(this,${idx})" style="width:16px;height:16px;cursor:pointer;accent-color:#1e6fd9">
-        </td>
-        <td style="padding:8px 10px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
-        <td style="padding:8px 10px;font-weight:600;color:#0d1b3e;white-space:nowrap">${r.ship}${needCtct?'<span style="margin-left:4px;font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 4px;border-radius:3px">컨택필요</span>':''}</td>
-        <td style="padding:8px 10px;font-size:11px;color:#9ba3bc;border-right:2px solid #e8ecf5">${r.imo||'-'}</td>
-        <td style="padding:8px 10px;font-size:11px">${equipSpec}</td>
-        <td style="padding:8px 10px;font-size:11px;color:#5a6480">${equipDoc}</td>
-        <td style="padding:8px 10px;font-size:11px;color:#5a6480;border-right:2px solid #e8ecf5">${equipSensor}</td>
-        <td style="padding:8px 10px;text-align:center">${(ib&&r.order25)||(!ib&&r.status==='계약유효')?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
-        <td style="padding:8px 10px;font-size:11px;text-align:center;color:#5a6480">${ib?(r.date25||'-'):(r.status||'-')}</td>
-        <td style="padding:8px 10px;text-align:center">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
-        <td style="padding:8px 10px;text-align:center">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:7px 8px;text-align:center"><input type="checkbox" ${inC?'checked':''} onchange="toggleCartByCheck(this,${idx})" style="width:15px;height:15px;cursor:pointer;accent-color:#1e6fd9"></td>
+        <td style="padding:7px 8px"><span class="type-badge ${ib?'tb-bwts':'tb-sox'}">${r._t}</span></td>
+        <td style="padding:7px 8px;font-size:11px;color:#9ba3bc;font-family:monospace">${r.imo||'-'}</td>
+        <td style="padding:7px 8px;font-weight:600;color:#0d1b3e;white-space:nowrap">${r.ship}<button class="info-btn" onclick="openModal(${idx})" title="상세">i</button>${needCtct?'<span style="margin-left:4px;font-size:10px;background:#fee2e2;color:#b91c1c;padding:1px 4px;border-radius:3px">컨택필요</span>':''}</td>
+        <td style="padding:7px 8px;font-size:11px;color:#5a6480;border-right:2px solid #e8ecf5">${r.project||r.system||'-'}</td>
+        <td style="padding:7px 8px;font-size:11px">${r.owner}</td>
+        <td style="padding:7px 8px;font-size:11px;border-right:2px solid #e8ecf5">${r.country||'-'}</td>
+        <td style="padding:7px 8px;font-size:11px;font-family:monospace">${specSys}</td>
+        <td style="padding:7px 8px;font-size:11px;color:#5a6480">${drawOtp}</td>
+        <td style="padding:7px 8px;border-right:2px solid #e8ecf5">${sensor}</td>
+        <td style="padding:7px 8px;text-align:center;min-width:50px">${isActive?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:7px 8px;font-size:11px;text-align:center;color:#5a6480;min-width:65px">${ib?(r.date25||'-'):'-'}</td>
+        <td style="padding:7px 8px;text-align:center;min-width:50px">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+        <td style="padding:7px 8px;text-align:center;min-width:50px">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
       </tr>`;
     });
-    html+=`</table></div></div>`;
+    html+=`</tbody></table></div></div>`;
   });
 
-  // 아코디언을 테이블 래퍼 자리에 렌더링
-  const wrap=document.getElementById('cOwnerDetail').querySelector('div[style*="background:#fff"]');
-  if(wrap) wrap.querySelector('div[style*="overflow-x"]').innerHTML=`<div style="padding:12px">${html}</div>`;
-  else document.getElementById('cVesselTb').innerHTML='';
+  // 아코디언을 전용 컨테이너에 렌더링
+  document.getElementById('cSingleOwnerWrap').style.display='none';
+  const accWrap = document.getElementById('cAccordionWrap');
+  accWrap.style.display='block';
+  accWrap.innerHTML = html;
   updateCartBadge2();
 }
 
@@ -1600,6 +1633,9 @@ function showOwnerVessels(owner, fromCountry){
 
   document.getElementById('cOwnerSection').style.display='none';
   document.getElementById('cOwnerDetail').style.display='block';
+  // 단일 선주사 모드: 단일 테이블 표시, 아코디언 숨김
+  document.getElementById('cSingleOwnerWrap').style.display='block';
+  document.getElementById('cAccordionWrap').style.display='none';
 
   const bF=BWTS.filter(r=>r.owner===owner);
   const sF=SOX.filter(r=>r.owner===owner);
@@ -1629,7 +1665,7 @@ function showOwnerVessels(owner, fromCountry){
     const specSys=ib?(r.spec||'-'):(r.system||'-');
     const drawOtp=ib?(r.drawNo||'-'):(r.otp||'-');
     const sensor=ib
-      ?[r.pt?`PT:${r.pt}`:'',r.tt?`TT:${r.tt}`:'',r.uvi?`UVI:${r.uvi}`:'',r.fmu?`FMU:${r.fmu}`:''].filter(Boolean).map(s=>mkTag(s,'#f0f2f7','')).join('')||'-'
+      ?[r.pt&&parseInt(r.pt)?`PT:${r.pt}`:'',r.tt&&parseInt(r.tt)?`TT:${r.tt}`:'',r.tt_ex&&parseInt(r.tt_ex)?`TT(EX):${r.tt_ex}`:'',r.uvi&&parseInt(r.uvi)?`UVI:${r.uvi}`:'',r.fmu&&parseInt(r.fmu)?`FMU:${r.fmu}`:''].filter(Boolean).map(s=>mkTag(s,'#f0f2f7','')).join('')||'-'
       :[r.inTur&&r.tur?`TUR:${r.inTur}×${r.tur}EA`:'',r.inPah&&r.pah?`PAH:${r.inPah}×${r.pah}EA`:''].filter(Boolean).map(s=>mkTag(s,'#d1fae5','#065f46')).join('')||'-';
     const isActive=(ib&&r.order25)||(!ib&&(r.status==='Active'||r.status==='계약유효'));
     return `<tr style="border-bottom:1px solid #f0f2f7;background:${needCtct?'#fff8f8':''}" onmouseover="this.style.background='${needCtct?'#fff0f0':'#f8f9ff'}'" onmouseout="this.style.background='${needCtct?'#fff8f8':''}'">
@@ -1643,11 +1679,12 @@ function showOwnerVessels(owner, fromCountry){
       <td style="padding:7px 8px;font-size:11px;font-family:monospace">${specSys}</td>
       <td style="padding:7px 8px;font-size:11px;color:#5a6480">${drawOtp}</td>
       <td style="padding:7px 8px;border-right:2px solid #e8ecf5">${sensor}</td>
-      <td style="padding:7px 8px;text-align:center;min-width:60px">${isActive?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
-      <td style="padding:7px 8px;text-align:center;min-width:60px">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
-      <td style="padding:7px 8px;text-align:center;min-width:60px">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:7px 8px;text-align:center;min-width:55px">${isActive?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:7px 8px;font-size:11px;text-align:center;color:#5a6480;min-width:70px">${ib?(r.date25||'-'):'-'}</td>
+      <td style="padding:7px 8px;text-align:center;min-width:55px">${ib&&r.est26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
+      <td style="padding:7px 8px;text-align:center;min-width:55px">${ib&&r.order26?'<span class="chk">✓</span>':'<span class="dsh">-</span>'}</td>
     </tr>`;
-  }).join('')||'<tr><td colspan="13" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
+  }).join('')||'<tr><td colspan="14" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
   updateCartBadge2();
 }
 
@@ -1688,78 +1725,141 @@ function cGoBack(){
 
 // PDF 리포트 출력
 function calcEstimate(r){
-  if(!r.pt&&!r.tt&&!r.uvi&&!r.fmu) return null;
+  if(!r.pt&&!r.tt&&!r.tt_ex&&!r.uvi&&!r.fmu) return null;
   const pt=parseInt(r.pt)||0;
   const tt=parseInt(r.tt)||0;
   const ttex=parseInt(r.tt_ex)||0;
   const uvi=parseInt(r.uvi)||0;
   const fmu=parseInt(r.fmu)||0;
-  return 200 + 3000 + (pt+tt+ttex+uvi)*625 + fmu*250;
+  return 200+3000+(pt+tt+ttex+uvi)*625+fmu*250;
 }
 
 function exportOwnerPDF(){
-  const title=document.getElementById('cOwnerTitle').textContent;
+  const titleEl=document.getElementById('cOwnerTitle');
+  const title=titleEl?titleEl.textContent:'영업 현황';
   const vessels=_currentOwnerVessels;
   if(!vessels.length){alert('선박 데이터가 없습니다.');return;}
-
   const now=new Date();
   const dateStr=`${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
 
-  let totalEst=0;
-  let estCount=0;
+  // 선주사별 그룹핑
+  const ownerMap={};
+  vessels.forEach(r=>{
+    if(!ownerMap[r.owner]) ownerMap[r.owner]=[];
+    ownerMap[r.owner].push(r);
+  });
 
-  const rows=vessels.map((r,i)=>{
-    const ib=r._t==='BWTS';
-    const est=ib?calcEstimate(r):null;
-    if(est){totalEst+=est;estCount++;}
-    return `<tr style="border-bottom:1px solid #eaecf5">
-      <td style="padding:8px 10px">${i+1}</td>
-      <td style="padding:8px 10px"><span style="background:${ib?'#dbeafe':'#d1fae5'};color:${ib?'#1d4ed8':'#065f46'};padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700">${r._t}</span></td>
-      <td style="padding:8px 10px;font-weight:600">${r.ship}</td>
-      <td style="padding:8px 10px;font-size:11px;color:#5a6480">${r.imo||'-'}</td>
-      <td style="padding:8px 10px;font-size:11px">${r.project||r.system||'-'}</td>
-      <td style="padding:8px 10px;font-size:11px">${ib?(r.spec||'-'):(r.system||'-')}</td>
-      <td style="padding:8px 10px;text-align:center">${(ib&&r.order25)||(!ib&&r.status==='계약유효')?'✓':'-'}</td>
-      <td style="padding:8px 10px;text-align:center">${ib&&r.est26?'✓':'-'}</td>
-      <td style="padding:8px 10px;text-align:center">${ib&&r.order26?'✓':'-'}</td>
-      <td style="padding:8px 10px;text-align:right;font-weight:600;color:#1e6fd9">${est?'$'+est.toLocaleString():'-'}</td>
-    </tr>`;
-  }).join('');
+  let totalEst=0, totalEstCount=0;
+  const excelRows=[['선주사','유형','선명','IMO','프로젝트','장비SPEC','도면/OTP','2025수주','2025승선일','2026견적','2026수주','예상수주액(USD)']];
+  let ownerSections='';
+
+  Object.entries(ownerMap).forEach(([owner,vList])=>{
+    const bwts=vList.filter(r=>r._t==='BWTS');
+    const sox=vList.filter(r=>r._t==='SCRUBBER');
+    const b25=bwts.filter(r=>r.order25).length;
+    const b26=bwts.filter(r=>r.order26).length;
+    const sv=sox.filter(r=>r.status==='Active'||r.status==='계약유효').length;
+    let ownerEst=0;
+
+    const rows=vList.map((r,i)=>{
+      const ib=r._t==='BWTS';
+      const est=ib?calcEstimate(r):null;
+      if(est){ownerEst+=est;totalEst+=est;totalEstCount++;}
+      const isActive=(ib&&r.order25)||(!ib&&(r.status==='Active'||r.status==='계약유효'));
+      excelRows.push([owner,r._t,r.ship,r.imo||'',r.project||r.system||'',ib?(r.spec||''):(r.system||''),ib?(r.drawNo||''):(r.otp||''),isActive?'Y':'',ib?(r.date25||''):'',ib&&r.est26?'Y':'',ib&&r.order26?'Y':'',est||'']);
+      return `<tr>
+        <td>${i+1}</td>
+        <td><span style="background:${ib?'#dbeafe':'#d1fae5'};color:${ib?'#1d4ed8':'#065f46'};padding:2px 6px;border-radius:3px;font-size:10px;font-weight:700">${r._t}</span></td>
+        <td style="font-weight:600">${r.ship}</td>
+        <td style="color:#6b7280">${r.imo||'-'}</td>
+        <td style="color:#6b7280">${r.project||r.system||'-'}</td>
+        <td style="font-family:monospace">${ib?(r.spec||'-'):(r.system||'-')}</td>
+        <td style="color:#6b7280">${ib?(r.drawNo||'-'):(r.otp||'-')}</td>
+        <td style="text-align:center;color:${isActive?'#059669':'#9ca3af'}">${isActive?'✓':'-'}</td>
+        <td style="text-align:center;color:#6b7280;font-size:10px">${ib?(r.date25||'-'):'-'}</td>
+        <td style="text-align:center;color:${ib&&r.est26?'#059669':'#9ca3af'}">${ib&&r.est26?'✓':'-'}</td>
+        <td style="text-align:center;color:${ib&&r.order26?'#059669':'#9ca3af'}">${ib&&r.order26?'✓':'-'}</td>
+        <td style="text-align:right;color:#1d4ed8;font-weight:600">${est?'$'+est.toLocaleString():'-'}</td>
+      </tr>`;
+    }).join('');
+
+    ownerSections+=`
+      <div class="owner-block">
+        <div class="owner-header">
+          <div>
+            <div class="owner-name">${owner}</div>
+            <div class="owner-sub">BWTS ${bwts.length}척 · SOX ${sox.length}건 · 2025수주 ${b25} · 2026수주 ${b26} · SOX유효 ${sv}</div>
+          </div>
+          ${ownerEst>0?`<div class="owner-est">예상수주액: USD ${ownerEst.toLocaleString()}</div>`:''}
+        </div>
+        <table>
+          <thead><tr>
+            <th>No.</th><th>유형</th><th>선명</th><th>IMO</th><th>프로젝트</th>
+            <th>장비SPEC</th><th>도면/OTP</th>
+            <th style="text-align:center">2025수주</th><th style="text-align:center">2025승선일</th>
+            <th style="text-align:center">2026견적</th><th style="text-align:center">2026수주</th>
+            <th style="text-align:right">예상수주액</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  });
+
+  const summaryHtml=document.getElementById('cSummaryCards').innerHTML
+    .replace(/style="[^"]*grid[^"]*"/g,'')
+    .replace(/font-size:22px/g,'font-size:16px');
 
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>${title}</title>
+  <title>PANASIA AM — ${title}</title>
   <style>
-    body{font-family:Arial,sans-serif;margin:30px;color:#1a2340;font-size:12px}
-    .header{background:#0d1b3e;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:20px}
-    .header h1{font-size:18px;margin:0 0 4px}
-    .header p{margin:0;opacity:0.6;font-size:12px}
-    .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
-    .card{background:#f6f8fc;border-radius:8px;padding:12px;border-left:3px solid #1e6fd9}
-    .card label{font-size:10px;color:#7a85a3;display:block;margin-bottom:4px}
-    .card span{font-size:18px;font-weight:800;color:#0d1b3e}
-    table{width:100%;border-collapse:collapse;font-size:11px}
-    th{background:#f6f8fc;padding:8px 10px;text-align:left;font-weight:700;color:#5a6480;border-bottom:1.5px solid #eaecf5}
-    .total{background:#e8f0fd;padding:12px 16px;border-radius:8px;margin-top:16px;text-align:right;font-size:14px;font-weight:800;color:#1e6fd9}
-    .footer{margin-top:20px;font-size:10px;color:#9ba3bc;text-align:right}
-    @media print{body{margin:15px}}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif;font-size:11px;color:#1f2937;background:#fff;padding:20px}
+    .no-print{margin-bottom:14px;display:flex;gap:8px}
+    .btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+    .report-header{background:#0d1b3e;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+    .report-title{font-size:15px;font-weight:800}
+    .report-date{font-size:10px;opacity:0.6;margin-top:2px}
+    .summary-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+    .owner-block{margin-bottom:16px;border:1.5px solid #d1d5db;border-radius:6px;overflow:hidden;page-break-inside:avoid}
+    .owner-header{background:#f3f4f6;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #d1d5db}
+    .owner-name{font-size:12px;font-weight:700;color:#0d1b3e}
+    .owner-sub{font-size:10px;color:#6b7280;margin-top:2px}
+    .owner-est{font-size:12px;font-weight:700;color:#1d4ed8;white-space:nowrap}
+    table{width:100%;border-collapse:collapse;font-size:10px}
+    th{background:#f9fafb;padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #d1d5db;border-right:1px solid #e5e7eb;white-space:nowrap}
+    td{padding:5px 8px;border-bottom:1px solid #e5e7eb;border-right:1px solid #f0f0f0;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:nth-child(even) td{background:#f9fafb}
+    .total-box{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-top:14px;text-align:right;font-size:13px;font-weight:800;color:#1d4ed8}
+    .footer{margin-top:12px;font-size:9px;color:#9ca3af;text-align:right;border-top:1px solid #e5e7eb;padding-top:8px}
+    @media print{.no-print{display:none!important}body{padding:10px}}
   </style></head><body>
-  <div class="header">
-    <h1>PANASIA AM — ${title}</h1>
-    <p>영업 현황 리포트 · ${dateStr}</p>
+  <div class="no-print">
+    <button class="btn" style="background:#0d1b3e;color:#fff" onclick="window.print()">🖨 PDF 출력</button>
+    <button class="btn" style="background:#059669;color:#fff" onclick="doExcel()">📊 Excel 다운로드</button>
   </div>
-  <div class="cards">
-    ${document.getElementById('cSummaryCards').innerHTML.replace(/style="[^"]*grid[^"]*"/g,'')}
+  <div class="report-header">
+    <div>
+      <div class="report-title">PANASIA AM 영업팀 — ${title}</div>
+      <div class="report-date">영업 현황 리포트 · 기준일: ${dateStr}</div>
+    </div>
+    <div style="font-size:18px;font-weight:900;letter-spacing:2px">PANASIA</div>
   </div>
-  <table>
-    <thead><tr>
-      <th>No.</th><th>유형</th><th>선명</th><th>IMO</th><th>프로젝트</th><th>용량/센서</th>
-      <th>2025수주</th><th>2026견적</th><th>2026수주</th><th>예상수주액</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-  ${estCount>0?`<div class="total">예상 수주액 합계 (${estCount}건): USD ${totalEst.toLocaleString()}</div>`:''}
-  <div class="footer">PANASIA AM Sales Dashboard · ${dateStr} 기준</div>
-  <script>window.onload=()=>window.print();<\/script>
+  <div class="summary-cards">${summaryHtml}</div>
+  ${ownerSections}
+  ${totalEstCount>0?`<div class="total-box">전체 예상 수주액 합계 (${totalEstCount}건 기준): USD ${totalEst.toLocaleString()}</div>`:''}
+  <div class="footer">PANASIA AM Sales Dashboard · ${dateStr} 기준 출력</div>
+  <script>
+  const _excelData=${JSON.stringify(excelRows)};
+  function doExcel(){
+    const csv=_excelData.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\\n');
+    const blob=new Blob(['\\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='PANASIA_AM_영업현황_${dateStr}.csv';
+    a.click();
+  }
+  <\/script>
   </body></html>`;
 
   const w=window.open('','_blank');
