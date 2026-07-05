@@ -424,18 +424,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
             <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
               <th style="padding:8px 8px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">담기</th>
               <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
-              <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">IMO</th>
-              <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선명</th>
-              <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">프로젝트</th>
-              <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">선주사</th>
-              <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">국가</th>
+              <th onclick="sortSearch('imo')" style="padding:8px 8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">IMO ↕</th>
+              <th onclick="sortSearch('ship')" style="padding:8px 8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">선명 ↕</th>
+              <th onclick="sortSearch('project')" style="padding:8px 8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;border-right:2px solid #e8ecf5">프로젝트 ↕</th>
+              <th onclick="sortSearch('owner')" style="padding:8px 8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">선주사 ↕</th>
+              <th onclick="sortSearch('country')" style="padding:8px 8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;border-right:2px solid #e8ecf5">국가 ↕</th>
               <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">장비SPEC</th>
               <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면/OTP</th>
               <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
-              <th style="padding:8px 8px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700;min-width:55px">2025수주</th>
-              <th style="padding:8px 8px;text-align:center;font-size:11px;color:#1e6fd9;font-weight:700;min-width:70px">2025승선일</th>
-              <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:55px">2026견적</th>
-              <th style="padding:8px 8px;text-align:center;font-size:11px;color:#10b981;font-weight:700;min-width:55px">2026수주</th>
+              <th onclick="sortSearch('order25')" style="padding:8px 8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;min-width:55px">2025수주 ↕</th>
+              <th onclick="sortSearch('date25')" style="padding:8px 8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;min-width:70px">2025승선일 ↕</th>
+              <th onclick="sortSearch('est26')" style="padding:8px 8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;min-width:55px">2026견적 ↕</th>
+              <th onclick="sortSearch('order26')" style="padding:8px 8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;min-width:55px">2026수주 ↕</th>
             </tr>
           </thead>
           <tbody id="rTb"></tbody>
@@ -541,18 +541,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
                   <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
                     <th style="padding:8px 8px;text-align:center;font-size:11px;color:#5a6480;font-weight:700;width:32px">담기</th>
                     <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
-                    <th onclick="sortVessels('imo')" style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;cursor:pointer;background:rgb(139,170,225);color:#fff">IMO</th>
-                    <th onclick="sortVessels('ship')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;cursor:pointer;background:rgb(139,170,225);color:#fff">선명</th>
-                    <th onclick="sortVessels('project')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;cursor:pointer;border-right:2px solid #e8ecf5;background:rgb(139,170,225);color:#fff">프로젝트</th>
-                    <th onclick="sortVessels('owner')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;cursor:pointer;background:rgb(139,170,225);color:#fff">선주사</th>
-                    <th onclick="sortVessels('country')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;cursor:pointer;border-right:2px solid #e8ecf5;background:rgb(139,170,225);color:#fff">국가</th>
+                    <th onclick="sortVessels('imo')" style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;color:#0d1b3e;cursor:pointer">IMO ↕</th>
+                    <th onclick="sortVessels('ship')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer">선명 ↕</th>
+                    <th onclick="sortVessels('project')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer;border-right:2px solid #e8ecf5">프로젝트 ↕</th>
+                    <th onclick="sortVessels('owner')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer">선주사 ↕</th>
+                    <th onclick="sortVessels('country')" style="padding:8px 8px;text-align:left;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer;border-right:2px solid #e8ecf5">국가 ↕</th>
                     <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">장비SPEC</th>
                     <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면/OTP</th>
                     <th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
-                    <th onclick="sortVessels('order25')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;min-width:55px;background:rgb(139,170,225);color:#fff">2025수주</th>
-                    <th onclick="sortVessels('date25')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;min-width:70px;background:rgb(139,170,225);color:#fff">2025승선일</th>
-                    <th onclick="sortVessels('est26')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;min-width:55px;background:rgb(139,170,225);color:#fff">2026견적</th>
-                    <th onclick="sortVessels('order26')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;min-width:55px;background:rgb(139,170,225);color:#fff">2026수주</th>
+                    <th onclick="sortVessels('order25')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:55px">2025수주 ↕</th>
+                    <th onclick="sortVessels('date25')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:70px">2025승선일 ↕</th>
+                    <th onclick="sortVessels('est26')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:55px">2026견적 ↕</th>
+                    <th onclick="sortVessels('order26')" style="padding:8px 8px;text-align:center;font-size:11px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:55px">2026수주 ↕</th>
                   </tr>
                 </thead>
                 <tbody id="cVesselTb"></tbody>
@@ -1266,10 +1266,10 @@ function makeRow(r, idx, cartAction) {
 function getSectionThead(sortable) {
   const sk = _sortState.key, sa = _sortState.asc;
   const th = (key, label, extra='') => sortable
-    ? `<th onclick="sortVessels('${key}')" style="padding:8px 8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;user-select:none;${extra}">${label} <span style="font-size:10px;color:${sk===key?'#1e6fd9':'#aaa'}">${sk===key?(sa?'↑':'↓'):'↕'}</span></th>`
+    ? `<th onclick="sortVessels('${key}')" style="padding:8px 8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;color:#0d1b3e;cursor:pointer;user-select:none;${extra}">${label} <span style="font-size:10px;color:${sk===key?'#1e6fd9':'#aaa'}">${sk===key?(sa?'↑':'↓'):'↕'}</span></th>`
     : `<th style="padding:8px 8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;${extra}">${label}</th>`;
   const thc = (key, label, extra='') => sortable
-    ? `<th onclick="sortVessels('${key}')" style="padding:8px 8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;user-select:none;min-width:55px;${extra}">${label} <span style="font-size:10px;color:${sk===key?'#1e6fd9':'#aaa'}">${sk===key?(sa?'↑':'↓'):'↕'}</span></th>`
+    ? `<th onclick="sortVessels('${key}')" style="padding:8px 8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;color:#0d1b3e;cursor:pointer;user-select:none;min-width:55px;${extra}">${label} <span style="font-size:10px;color:${sk===key?'#1e6fd9':'#aaa'}">${sk===key?(sa?'↑':'↓'):'↕'}</span></th>`
     : `<th style="padding:8px 8px;text-align:center;font-size:11px;color:#5a6480;font-weight:700;min-width:55px;${extra}">${label}</th>`;
   return `<thead>
     <tr style="background:rgb(139,170,225)">
@@ -1558,18 +1558,18 @@ function showMultiOwner(){
             <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
               <th style="padding:7px 8px;text-align:center;font-size:10px;color:#5a6480;font-weight:700;width:32px">담기</th>
               <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">유형</th>
-              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">IMO</th>
-              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">선명</th>
-              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">프로젝트</th>
-              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">선주사</th>
-              <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">국가</th>
+              <th onclick="sortVessels('imo')" style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;color:#0d1b3e;cursor:pointer">IMO ↕</th>
+              <th onclick="sortVessels('ship')" style="padding:7px 8px;text-align:left;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer">선명 ↕</th>
+              <th onclick="sortVessels('project')" style="padding:7px 8px;text-align:left;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer;border-right:2px solid #e8ecf5">프로젝트 ↕</th>
+              <th onclick="sortVessels('owner')" style="padding:7px 8px;text-align:left;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer">선주사 ↕</th>
+              <th onclick="sortVessels('country')" style="padding:7px 8px;text-align:left;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer;border-right:2px solid #e8ecf5">국가 ↕</th>
               <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">장비SPEC</th>
               <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700">도면번호</th>
               <th style="padding:7px 8px;text-align:left;font-size:10px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
-              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#1e6fd9;font-weight:700;min-width:50px">2025수주</th>
-              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#1e6fd9;font-weight:700;min-width:65px">2025승선일</th>
-              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#10b981;font-weight:700;min-width:50px">2026견적</th>
-              <th style="padding:7px 8px;text-align:center;font-size:10px;color:#10b981;font-weight:700;min-width:50px">2026수주</th>
+              <th onclick="sortVessels('order25')" style="padding:7px 8px;text-align:center;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:50px">2025수주 ↕</th>
+              <th onclick="sortVessels('date25')" style="padding:7px 8px;text-align:center;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:65px">2025승선일 ↕</th>
+              <th onclick="sortVessels('est26')" style="padding:7px 8px;text-align:center;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:50px">2026견적 ↕</th>
+              <th onclick="sortVessels('order26')" style="padding:7px 8px;text-align:center;font-size:10px;font-weight:700;color:#0d1b3e;cursor:pointer;min-width:50px">2026수주 ↕</th>
             </tr>
           </thead>
           <tbody>`;
@@ -1933,6 +1933,28 @@ function exportOwnerPDF(){
 // ======================== 열 정렬 ========================
 let _sortState = {key: null, asc: true};
 
+let _searchSortState = {key: null, asc: true};
+
+function sortSearch(key) {
+  if(_searchSortState.key === key) _searchSortState.asc = !_searchSortState.asc;
+  else { _searchSortState.key = key; _searchSortState.asc = true; }
+
+  curData = [...curData].sort((a, b) => {
+    let va = a[key] || '';
+    let vb = b[key] || '';
+    if(!isNaN(va) && !isNaN(vb) && va !== '' && vb !== '') {
+      va = parseFloat(va); vb = parseFloat(vb);
+    } else {
+      va = String(va).toLowerCase();
+      vb = String(vb).toLowerCase();
+    }
+    if(va < vb) return _searchSortState.asc ? -1 : 1;
+    if(va > vb) return _searchSortState.asc ? 1 : -1;
+    return 0;
+  });
+  document.getElementById('rTb').innerHTML = curData.map((r,idx)=>makeRow(r,idx)).join('');
+}
+
 function sortVessels(key) {
   if(_sortState.key === key) _sortState.asc = !_sortState.asc;
   else { _sortState.key = key; _sortState.asc = true; }
@@ -1940,7 +1962,6 @@ function sortVessels(key) {
   const sorted = [..._currentOwnerVessels].sort((a, b) => {
     let va = a[key] || '';
     let vb = b[key] || '';
-    // 숫자형 비교
     if(!isNaN(va) && !isNaN(vb) && va !== '' && vb !== '') {
       va = parseFloat(va); vb = parseFloat(vb);
     } else {
@@ -1954,9 +1975,11 @@ function sortVessels(key) {
   _currentOwnerVessels = sorted;
   curData = sorted;
 
-  // 현재 모드에 따라 재렌더링
-  if(document.getElementById('cSingleOwnerWrap').style.display !== 'none') {
-    renderOwnerVesselRows(sorted);
+  // cVesselTb가 보이면 재렌더링 (국가별/선주사별 단일 모두 해당)
+  const tb = document.getElementById('cVesselTb');
+  if(tb) {
+    tb.innerHTML = sorted.map((r,idx)=>makeRow(r,idx)).join('')
+      || '<tr><td colspan="14" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
   }
 }
 
