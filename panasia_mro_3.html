@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PANASIA MRO 원가 계산기</title>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.9/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','Segoe UI',sans-serif;background:#f0f3f9;min-height:100vh}
+input:focus{outline:2px solid #2e4fa3;outline-offset:1px}
+select:focus{outline:2px solid #2e4fa3}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#b0bcd0;border-radius:3px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo}=React;
+const NAVY="#0d1f45",NAVY2="#1e3468",STEEL="#2e4fa3",HL="#eef2fb",AMBER="#e07b00",GREEN="#16a34a";
+const LS_DEF="panasia_sc_bw_def",LS_LOG="panasia_mro_log";
+
+/* ── Default rates ── */
+const SC_DEF={
+  working:720,travel:360,
+  pahCal:1380,pahPPS:1500,pahF360:355,pahF254:355,pahLamp:1290,
+  pahPurchase:1030,pahDepreciation:360,
+  turCal:500,turPurchase:1254,turDepreciation:100,
+  sensorCable:30,sensorDelivery:540,
+  serviceKit:1540,cbt:155,ibt:155,mscs:615,panHawk:865,shipping:200,
+};
+const BW_DEF={
+  mro:{baseMarginSell:200,baseMarginCost:0,engineerSell:1500,engineerCost:720,
+       ptSell:625,ptCost:0,tempNexSell:625,tempNexCost:17,
+       tempExSell:625,tempExCost:38,uviSell:625,uviCost:205,flowSell:250,flowCost:38},
+  refurb:{ptSell:900,ptCost:0,tempNexSell:700,tempNexCost:17,
+         tempExSell:850,tempExCost:38,uviSell:850,uviCost:205,shippingSell:200,shippingCost:200},
+  new:{ptSell:1800,ptCost:155,tempNexSell:800,tempNexCost:183,
+       tempExSell:1050,tempExCost:417,uviSell:1500,uviCost:426},
+  cal:{ptSell:350,ptCost:0,tempNexSell:250,tempNexCost:17,
+       tempExSell:250,tempExCost:38,uviSell:470,uviCost:205},
+};
+
+function deepClone(o){return JSON.parse(JSON.stringify(o));}
+function loadSaved(){
+  try{const s=localStorage.getItem(LS_DEF);return s?JSON.parse(s):null;}catch{return null;}
+}
+function saveDef(sc,bw){
+  try{
+    localStorage.setItem(LS_DEF,JSON.stringify({sc,bw}));
+    const logs=JSON.parse(localStorage.getItem(LS_LOG)||"[]");
+    logs.unshift({date:todayS(),ts:Date.now(),sc:deepClone(sc),bw:deepClone(bw)});
+    if(logs.length>30)logs.pop();
+    localStorage.setItem(LS_LOG,JSON.stringify(logs));
+  }catch{}
+}
+function getLogs(){
+  try{return JSON.parse(localStorage.getItem(LS_LOG)||"[]");}catch{return [];}
+}
+
+const fD=v=>v==null?"–":`$${Math.round(v).toLocaleString()}`;
+const todayS=()=>new Date().toISOString().slice(0,10).replace(/-/g,".");
+const BW_LABELS={"mro":"MRO FULL SERVICE","refurb":"REFURB","new":"NEW SENSOR","cal":"CAL ONLY"};
+const BW_TITLE={"mro":"MRO Full Service","refurb":"Refurb 판매","new":"신품 구매","cal":"Cal-Only"};
+
+/* ── UI helpers ── */
+function Toggle({on,set}){
+  return <div onClick={()=>set(!on)} style={{width:40,height:22,borderRadius:11,cursor:"pointer",
+    background:on?STEEL:"#b0bcd0",position:"relative",transition:"background .2s",flexShrink:0}}>
+    <div style={{position:"absolute",top:3,left:on?20:3,width:16,height:16,borderRadius:8,
+      background:"white",boxShadow:"0 1px 3px rgba(0,0,0,.25)",transition:"left .18s"}}/>
+  </div>;
+}
+function Chk({label,on,set,hint}){
+  return <label style={{display:"flex",alignItems:"flex-start",gap:7,cursor:"pointer",marginBottom:6}}>
+    <input type="checkbox" checked={on} onChange={e=>set(e.target.checked)}
+      style={{accentColor:STEEL,marginTop:1,flexShrink:0,width:13,height:13}}/>
+    <span style={{fontSize:12,color:on?NAVY:"#777",lineHeight:1.4}}>
+      {label}{hint&&<span style={{display:"block",fontSize:10,color:"#aaa"}}>{hint}</span>}
+    </span>
+  </label>;
+}
+function Inp({label,value,set,type="text",unit,min=0}){
+  return <div style={{marginBottom:8}}>
+    {label&&<div style={{fontSize:10,color:"#667",marginBottom:2,textTransform:"uppercase",letterSpacing:.3}}>{label}</div>}
+    <div style={{display:"flex",alignItems:"center",gap:5}}>
+      <input type={type} value={value} min={min}
+        onChange={e=>set(type==="number"?Number(e.target.value):e.target.value)}
+        style={{flex:1,padding:"6px 10px",border:"1.5px solid #b8c8e8",borderRadius:4,
+          fontSize:12.5,background:"#e8f0fc",color:NAVY,fontWeight:600,
+          fontFamily:type==="number"?"monospace":"inherit"}}/>
+      {unit&&<span style={{fontSize:11,color:"#888",flexShrink:0}}>{unit}</span>}
+    </div>
+  </div>;
+}
+function Card({title,children}){
+  return <div style={{border:"1.5px solid #d0dcf0",borderRadius:6,marginBottom:10,overflow:"hidden"}}>
+    <div style={{background:NAVY2,color:"white",padding:"7px 13px",fontSize:11.5,fontWeight:700}}>{title}</div>
+    <div style={{padding:"11px 13px",background:"white"}}>{children}</div>
+  </div>;
+}
+const TH={padding:"7px 9px",background:NAVY2,color:"white",fontWeight:700,fontSize:10.5,
+  whiteSpace:"nowrap",borderRight:"1px solid rgba(255,255,255,.12)",textAlign:"left"};
+const TD={padding:"5px 9px",borderBottom:"1px solid #e8edf8",fontSize:11,
+  borderRight:"1px solid #edf0f8",verticalAlign:"middle"};
+const CAT={...TD,fontWeight:700,fontSize:11,color:NAVY2,background:HL,whiteSpace:"nowrap"};
+const NUM={...TD,textAlign:"right",fontFamily:"monospace",fontSize:11};
+
+/* ── ExcelJS helpers ── */
+function sC(cell,{bg,fc="000000",bold=false,align="left",fmt,sz=9}={}){
+  if(bg)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF"+bg}};
+  cell.font={color:{argb:"FF"+fc},bold,name:"Arial",size:sz};
+  cell.alignment={vertical:"middle",horizontal:align,wrapText:false};
+  if(fmt)cell.numFmt=fmt;
+  cell.border={top:{style:"thin",color:{argb:"FFCCCCCC"}},left:{style:"thin",color:{argb:"FFCCCCCC"}},
+    bottom:{style:"thin",color:{argb:"FFCCCCCC"}},right:{style:"thin",color:{argb:"FFCCCCCC"}}};
+}
+async function dlXlsx(wb,fname){
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=fname;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),200);
+}
+
+/* ── Scrubber Excel Export ── */
+async function exportScXlsx({sections,directTotal,mfgCost,sgaCost,indirect,costTotal,
+  selling,marginAmt,marginPct,mfgR,sgaR,ship,proj}){
+  const td=todayS();
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet("Scrubber MRO 원가");
+  ws.columns=[{width:5},{width:7},{width:14},{width:38},{width:12},{width:7},{width:13},{width:24}];
+  // Title
+  ws.mergeCells("A1:H1");
+  const t=ws.getCell("A1");
+  t.value="SCRUBBER MRO SERVICE PRICE TABLE & COST BREAKDOWN (2 YEAR CONTRACT BASIS)";
+  sC(t,{bg:"0D1F45",fc:"FFFFFF",bold:true,align:"center",sz:11});ws.getRow(1).height=18;
+  ws.addRow([]);
+  // Info
+  const info=[["A3:B3","선명",`C3:D3`,ship||"–"],["E3:F3","프로젝트 No.","G3:H3",proj||"–"],
+    ["A4:B4","견적일자","C4:D4",td],
+    ["E4:H4","견적제목",null,ship?`[QUOTE] SCRUBBER MRO_${ship.toUpperCase()}${proj?` (${proj})`:""} ${td}`:"–"]];
+  info.forEach(([rng,k,rng2,v])=>{
+    ws.mergeCells(rng);sC(ws.getCell(rng.split(":")[0]),{bg:"F5F7FC",bold:true});ws.getCell(rng.split(":")[0]).value=k;
+    if(rng2){ws.mergeCells(rng2);sC(ws.getCell(rng2.split(":")[0]),{bg:"EBF3FF"});ws.getCell(rng2.split(":")[0]).value=v;}
+  });
+  ws.addRow([]);
+  // Assumptions
+  ws.mergeCells("A6:H6");const ar=ws.getCell("A6");ar.value="[ ASSUMPTIONS ]";sC(ar,{bold:true,bg:"F5F7FC"});
+  const r7=ws.addRow(["제조간접비",`${mfgR}%`,"","판관간접비",`${sgaR}%`,"","마진율",`${marginPct}%`]);
+  r7.eachCell({includeEmpty:true},(c,i)=>sC(c,{bg:i%2===0?"EBF3FF":"F5F7FC",bold:i%2===0}));
+  ws.addRow([]);
+  // Header
+  const hdr=ws.addRow(["NO","구분","CATEGORY","SUB-CATEGORY","원가단가($)","수량","원가합계($)","비고"]);
+  hdr.eachCell({includeEmpty:true},c=>sC(c,{bg:"1E3468",fc:"FFFFFF",bold:true,align:"center"}));
+  hdr.height=16;
+  // Rows
+  sections.forEach((sec,si)=>{
+    const bg=si%2===0?"FFFFFF":"F9FAFD";
+    sec.rows.forEach((row,ri)=>{
+      const tot=(row.qty||0)*(row.unit||0);
+      const r=ws.addRow([ri===0?sec.no:"",ri===0?"직접비":"",ri===0?sec.cat:"",
+        row.sub,row.unit??null,row.qty??null,
+        tot>0?tot:(row.qty==null?"실비":null),row.note||""]);
+      r.eachCell({includeEmpty:true},(c,ci)=>{
+        const isCat=ci<=3;
+        sC(c,{bg:isCat?HL:bg,align:ci>=5&&ci<=7?"right":"left",
+          fmt:ci===5||ci===7?(typeof c.value==="number"?'"$"#,##0':undefined):undefined});
+        if(ci<=3)c.font={...c.font,bold:ci===3,color:{argb:"FF1E3468"}};
+      });
+    });
+  });
+  // Sub total
+  const st=ws.addRow(["","","","직접원가 소계 (Sub-Total)","","",directTotal,""]);
+  st.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"E4ECFB",bold:true,
+    align:ci===4||ci===7?"right":"left",fmt:ci===7?'"$"#,##0':undefined}));
+  ws.addRow([]);
+  [["9","제조간접비","공장/수도전기/가스/유지보수/관리인건비 등",mfgCost,mfgR],
+   ["10","판관 간접비","사무실/IT 통신/법무회계/마케팅/출장비 등",sgaCost,sgaR]].forEach(([no,cat,desc,val,pct])=>{
+    const r=ws.addRow([no,"간접비",cat,desc,val,1,val,`원가의 ${pct}%`]);
+    r.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:ci<=3?HL:"FFFBF5",
+      align:ci>=5?"right":"left",fmt:ci===5||ci===7?'"$"#,##0':undefined}));
+    r.getCell(1).font={...r.getCell(1).font,bold:false,color:{argb:"FF1E3468"}};
+    r.getCell(2).font={...r.getCell(2).font,color:{argb:"FF1E3468"}};
+    r.getCell(3).font={...r.getCell(3).font,bold:true,color:{argb:"FF1E3468"}};
+  });
+  const ist=ws.addRow(["","","","간접비 소계","","",indirect,""]);
+  ist.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"EDF2FB",bold:true,
+    align:ci===4||ci===7?"right":"left",fmt:ci===7?'"$"#,##0':undefined}));
+  const ct=ws.addRow(["","","","원가 TOTAL","","",costTotal,""]);
+  ct.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"DDE7F8",bold:true,
+    align:ci===4||ci===7?"right":"left",fmt:ci===7?'"$"#,##0':undefined}));
+  ws.addRow([]);
+  const pr=ws.addRow([11,"","이익",`마진율 ${marginPct}%`,"","",marginAmt,""]);
+  pr.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"FFF8F0",
+    fc:ci===7?"E07B00":"000000",bold:ci===7,
+    align:ci===7?"right":"left",fmt:ci===7?'"$"#,##0':undefined}));
+  const fp=ws.addRow(["","","최종판매가 (Selling Price)","","","",selling,""]);
+  fp.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"0D1F45",fc:"FFFFFF",bold:true,
+    align:ci===7?"right":ci===3?"left":"left",
+    fmt:ci===7?'"$"#,##0':undefined}));
+  const fname=`[QUOTE] SCRUBBER MRO_${ship||"선명"}${proj?` (${proj})`:""}_${td}.xlsx`;
+  await dlXlsx(wb,fname);
+}
+
+/* ── BWTS Excel Export ── */
+async function exportBwXlsx({rows,directSell,directCost,mfgCost,sgaCost,indirect,totalCost,
+  totalSell,marginAmt,marginPct,mfgR,sgaR,ship,proj,svcType}){
+  const td=todayS();
+  const typeLabel=BW_LABELS[svcType]||"MRO FULL SERVICE";
+  const typeTitle=BW_TITLE[svcType]||"MRO Full Service";
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet(`BWTS ${typeTitle}`);
+  ws.columns=[{width:5},{width:28},{width:8},{width:12},{width:12},{width:12},{width:12},{width:36}];
+  // Title
+  ws.mergeCells("A1:H1");
+  const t=ws.getCell("A1");
+  t.value=`PANASIA BWTS MRO — ${typeTitle} 견적서`;
+  sC(t,{bg:"0D1F45",fc:"FFFFFF",bold:true,align:"center",sz:11});ws.getRow(1).height=18;
+  ws.addRow([]);
+  // Info block
+  const infoPairs=[["선명 (Ship Name)",ship||""],["프로젝트 (Project No.)",proj||""],
+    ["견적일자 (Date)",td],
+    ["견적제목 (자동)",ship?`[QUOTE] BWTS ${typeLabel}_${ship.toUpperCase()}${proj?` (${proj})`:""} ${td}`:""]];
+  infoPairs.forEach(([k,v])=>{
+    const r=ws.addRow([]);
+    ws.mergeCells(`A${r.number}:B${r.number}`);
+    const kc=ws.getCell(`A${r.number}`);kc.value=k;sC(kc,{bg:"1E3468",fc:"FFFFFF",bold:true});
+    ws.mergeCells(`C${r.number}:H${r.number}`);
+    const vc=ws.getCell(`C${r.number}`);vc.value=v;sC(vc,{bg:"EBF3FF",fc:"0D1F45",bold:true});
+  });
+  ws.addRow([]);
+  // Assumptions header
+  const ah=ws.addRow([]);ws.mergeCells(`A${ah.number}:H${ah.number}`);
+  const ahc=ws.getCell(`A${ah.number}`);ahc.value="[ ASSUMPTIONS ]";sC(ahc,{bg:"1E3468",fc:"FFFFFF",bold:true});
+  // Assumption rows
+  [["제조간접비율 (Mfg Overhead)","→",`${mfgR}%`],["판관간접비율 (SGA Overhead)","→",`${sgaR}%`]].forEach(([k,,v])=>{
+    const r=ws.addRow([]);
+    ws.mergeCells(`A${r.number}:B${r.number}`);
+    ws.getCell(`A${r.number}`).value=k;sC(ws.getCell(`A${r.number}`),{bg:"F5F7FC"});
+    ws.getCell(`C${r.number}`).value="→";sC(ws.getCell(`C${r.number}`),{bg:"F5F7FC",align:"center"});
+    ws.mergeCells(`D${r.number}:H${r.number}`);
+    ws.getCell(`D${r.number}`).value=v;sC(ws.getCell(`D${r.number}`),{bg:"EBF3FF",bold:true,fc:"E07B00"});
+  });
+  ws.addRow([]);
+  // Direct cost header
+  const dh=ws.addRow([]);ws.mergeCells(`A${dh.number}:H${dh.number}`);
+  const dhc=ws.getCell(`A${dh.number}`);dhc.value="[ 직접원가 (Direct Cost) ]";sC(dhc,{bg:"1E3468",fc:"FFFFFF",bold:true});
+  // Column headers
+  const ch=ws.addRow(["NO","항목 (Item)","수량","판매단가","판매금액","원가단가","원가금액","비고"]);
+  ch.eachCell({includeEmpty:true},c=>sC(c,{bg:"2D4380",fc:"FFFFFF",bold:true,align:"center"}));
+  ch.height=15;
+  // Data rows
+  rows.forEach((row,i)=>{
+    const r=ws.addRow([row.no||"",row.label,row.qty,row.sell||null,
+      row.qty*(row.sell||0)||null,row.cost||null,
+      row.qty*(row.cost||0)||null,row.note||""]);
+    r.eachCell({includeEmpty:true},(c,ci)=>{
+      sC(c,{bg:i%2===0?"FFFFFF":"F9FAFD",
+        align:ci>=3&&ci<=7?"right":"left",
+        fmt:ci>=4&&ci<=7?(typeof c.value==="number"?'"$"#,##0':undefined):undefined});
+      if(ci===3&&row.qty>0)c.font={...c.font,bold:true,color:{argb:"FF2E4FA3"}};
+    });
+  });
+  // Subtotal
+  const sRow=ws.addRow(["","직접원가 소계","","","",directSell,"",directCost]);
+  // Restructure: sell in col E, cost in col G
+  // Actually fix this properly:
+  const stRow=ws.addRow(["","직접원가 소계","","",directSell,"",directCost,""]);
+  stRow.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"E4ECFB",bold:true,
+    align:ci>=3?"right":"left",fmt:ci===5||ci===7?'"$"#,##0':undefined}));
+  // Remove the bad row and keep the good one - need different approach
+  // Let me just use the correct row directly
+  ws.spliceRows(sRow.number,1); // remove wrong row
+  ws.addRow([]);
+  // Indirect
+  const indH=ws.addRow([]);ws.mergeCells(`A${indH.number}:H${indH.number}`);
+  ws.getCell(`A${indH.number}`).value="[ 간접비 (Indirect Cost) ]";
+  sC(ws.getCell(`A${indH.number}`),{bg:"1E3468",fc:"FFFFFF",bold:true});
+  [["제조간접비 (원가의 "+mfgR+"%)",mfgCost],["판관간접비 (원가의 "+sgaR+"%)",sgaCost]].forEach(([k,v])=>{
+    const r=ws.addRow(["",k,"","","","",v,""]);
+    r.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"FFF8F5",
+      align:ci===7?"right":"left",fmt:ci===7?'"$"#,##0':undefined}));
+  });
+  const ist2=ws.addRow(["","간접비 소계","","","","",indirect,""]);
+  ist2.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:"EDF2FB",bold:true,
+    align:ci===7?"right":"left",fmt:ci===7?'"$"#,##0':undefined}));
+  ws.addRow([]);
+  // Summary
+  const sumH=ws.addRow([]);ws.mergeCells(`A${sumH.number}:H${sumH.number}`);
+  ws.getCell(`A${sumH.number}`).value="[ 최종 요약 (Summary) ]";
+  sC(ws.getCell(`A${sumH.number}`),{bg:"1E3468",fc:"FFFFFF",bold:true});
+  [["판매금액 합계","",totalSell,"","","","",""],
+   ["원가 합계","","","","","",totalCost,""],
+   ["마진","",marginAmt,"","","","",""],
+   ["마진율","",`${marginPct}%`,"","","","",""]].forEach(([k,...rest])=>{
+    const rData=["",k,...rest];
+    const r=ws.addRow(rData);
+    r.eachCell({includeEmpty:true},(c,ci)=>sC(c,{bg:ci===3?"E8F8EF":"F0FDF4",
+      fc:ci===3?"16A34A":"000000",bold:ci===3,
+      align:ci===3?"left":"left",fmt:undefined}));
+  });
+  const fname=`[QUOTE] BWTS ${typeLabel}_${ship||"선명"}${proj?` (${proj})`:""}_${td}.xlsx`;
+  await dlXlsx(wb,fname);
+}
+
+/* ══ SCRUBBER QUOTATION TAB ══ */
+function ScQuotTab({scR,ship,setShip,proj,setProj,v1,setV1,v1t,setV1t,v2,setV2,v2t,setV2t,
+  pahQty,setPah,turQty,setTur,svcKit,setSvcKit,cbt,setCbt,ibt,setIbt,mscs,setMscs,hawk,setHawk,
+  mfgR,setMfgR,sgaR,setSgaR,selling,setSelling}){
+  const R=scR;const td=todayS();
+  const sections=useMemo(()=>{
+    const secs=[];let no=1;
+    if(v1||v2){
+      const rows=[];
+      if(v1){rows.push({sub:"WORKING (1회차 2M2D)",qty:4,unit:R.working,note:""});
+        if(v1t)rows.push({sub:"TRAVEL (1회차 2M2D)",qty:4,unit:R.travel,note:"MANPOWER RATE 반영"});}
+      if(v2){rows.push({sub:"WORKING (2회차 2M2D)",qty:4,unit:R.working,note:""});
+        if(v2t)rows.push({sub:"TRAVEL (2회차 2M2D)",qty:4,unit:R.travel,note:"MANPOWER RATE 반영"});}
+      secs.push({no:no++,cat:"MANPOWER",rows});
+      secs.push({no:no++,cat:"ATTENDANCE",rows:[
+        {sub:"AIRFARE / TRANSPORTATION",qty:null,unit:null,note:"실비 반영, 추가 정산"},
+        {sub:"ACCOMMODATION",qty:null,unit:null,note:"실비 반영, 추가 정산"},
+      ]});
+    }
+    if(pahQty>0||turQty>0){
+      const rows=[];
+      if(pahQty>0){
+        rows.push({sub:"PAH SENSOR CALIBRATION",qty:pahQty,unit:R.pahCal,note:"pah sensor"});
+        rows.push({sub:"PAH PPS 재질 교체",qty:1,unit:R.pahPPS,note:"최초 1회"});
+        rows.push({sub:"PAH FILTER REPLACEMENT (IF360)",qty:1,unit:R.pahF360,note:""});
+        rows.push({sub:"PAH FILTER REPLACEMENT (IF254)",qty:1,unit:R.pahF254,note:""});
+        rows.push({sub:"PAH LAMP REPLACEMENT",qty:1,unit:R.pahLamp,note:""});
+        rows.push({sub:"PAH SENSOR PURCHASE (안전재고)",qty:pahQty,unit:R.pahPurchase,note:""});
+        rows.push({sub:"PAH SENSOR 감가상각",qty:pahQty,unit:R.pahDepreciation,note:""});
+      }
+      if(turQty>0){
+        rows.push({sub:"TURBIDITY SENSOR CALIBRATION",qty:turQty,unit:R.turCal,note:"tur"});
+        rows.push({sub:"TURB. SENSOR PURCHASE (안전재고)",qty:turQty,unit:R.turPurchase,note:""});
+        rows.push({sub:"TURB. SENSOR 감가상각",qty:turQty,unit:R.turDepreciation,note:""});
+      }
+      rows.push({sub:"SENSOR CABLE REPLACEMENT",qty:1,unit:R.sensorCable,note:"최초 1회"});
+      rows.push({sub:"SENSOR DELIVERY (CALIBRATION)",qty:1,unit:R.sensorDelivery,note:""});
+      secs.push({no:no++,cat:"SENSOR",rows});
+    }
+    if(svcKit)secs.push({no:no++,cat:"SERVICE KIT",rows:[{sub:"12 ITEMS",qty:1,unit:R.serviceKit,note:""}]});
+    const tr=[];
+    if(cbt)tr.push({sub:"CBT (COMPUTER BASED TRAINING)",qty:1,unit:R.cbt,note:""});
+    if(ibt)tr.push({sub:"IBT (INTERNET BASED TRAINING)",qty:1,unit:R.ibt,note:""});
+    if(tr.length)secs.push({no:no++,cat:"TRAINING",rows:tr});
+    if(mscs)secs.push({no:no++,cat:"PAN-MSCS",rows:[{sub:"",qty:1,unit:R.mscs,note:""}]});
+    if(hawk)secs.push({no:no++,cat:"PAN-HAWK",rows:[{sub:"",qty:1,unit:R.panHawk,note:"Optional"}]});
+    secs.push({no:no++,cat:"송품비",rows:[{sub:"자재 송품비",qty:1,unit:R.shipping,note:""}]});
+    return secs;
+  },[v1,v1t,v2,v2t,pahQty,turQty,svcKit,cbt,ibt,mscs,hawk,R]);
+  const directTotal=useMemo(()=>sections.flatMap(s=>s.rows).reduce((s,r)=>s+(r.qty||0)*(r.unit||0),0),[sections]);
+  const mfgCost=Math.round(directTotal*mfgR/100),sgaCost=Math.round(directTotal*sgaR/100);
+  const indirect=mfgCost+sgaCost,costTotal=directTotal+indirect;
+  const marginAmt=selling-costTotal;
+  const marginPct=selling>0?((marginAmt/selling)*100).toFixed(1):"0.0";
+  const qTitle=ship?`[QUOTE] SCRUBBER MRO_${ship.toUpperCase()}${proj?` (${proj})`:""} ${td}`:"";
+  async function doExport(){
+    try{await exportScXlsx({sections,directTotal,mfgCost,sgaCost,indirect,costTotal,
+      selling,marginAmt,marginPct,mfgR,sgaR,ship,proj});}
+    catch(e){alert("Excel 오류: "+e.message);}
+  }
+  return(
+    <div style={{display:"grid",gridTemplateColumns:"320px 1fr",gap:14,padding:"14px 16px",alignItems:"start"}}>
+      <div>
+        <Card title="선박 정보">
+          <Inp label="선명 (Ship Name)" value={ship} set={setShip}/>
+          <Inp label="프로젝트 No." value={proj} set={setProj}/>
+          {qTitle&&<div style={{fontSize:9.5,color:STEEL,marginTop:3,wordBreak:"break-all"}}>{qTitle}</div>}
+        </Card>
+        <Card title="엔지니어 파견 (Manpower)">
+          <div style={{marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:5}}>
+              <Toggle on={v1} set={setV1}/>
+              <span style={{fontSize:12.5,fontWeight:700,color:v1?NAVY:"#aaa"}}>1회차 파견</span>
+              {v1&&<span style={{fontSize:10,color:STEEL,marginLeft:"auto"}}>${(R.working*4).toLocaleString()}</span>}
+            </div>
+            {v1&&<div style={{marginLeft:49}}><Chk label="Travel 포함" hint={`+$${(R.travel*4).toLocaleString()}`} on={v1t} set={setV1t}/></div>}
+          </div>
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:5}}>
+              <Toggle on={v2} set={setV2}/>
+              <span style={{fontSize:12.5,fontWeight:700,color:v2?NAVY:"#aaa"}}>2회차 파견</span>
+              {v2&&<span style={{fontSize:10,color:STEEL,marginLeft:"auto"}}>${(R.working*4).toLocaleString()}</span>}
+            </div>
+            {v2&&<div style={{marginLeft:49}}><Chk label="Travel 포함" hint={`+$${(R.travel*4).toLocaleString()}`} on={v2t} set={setV2t}/></div>}
+          </div>
+          <div style={{marginTop:6,padding:"5px 9px",background:"#f0f4fc",borderRadius:4,fontSize:10,color:"#667"}}>
+            기준: 2M × 2D = 4 man-day · Working ${R.working}/MD · Travel ${R.travel}/MD
+          </div>
+        </Card>
+        <Card title="센서 (Sensor)">
+          <div style={{marginBottom:9}}>
+            <div style={{fontSize:10,color:"#667",marginBottom:3,textTransform:"uppercase"}}>메이커</div>
+            <div style={{padding:"6px 10px",background:"#e0e9f8",border:"1.5px solid #b8c8e8",
+              borderRadius:4,fontSize:12,fontWeight:700,color:NAVY2,
+              display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              TRIOS (구형)<span style={{fontSize:9.5,color:STEEL,fontWeight:400}}>ABB · E+H 추가예정</span>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <Inp label="PAH 수량" value={pahQty} set={v=>setPah(Math.max(0,v))} type="number" unit="EA"/>
+            <Inp label="Turbidity 수량" value={turQty} set={v=>setTur(Math.max(0,v))} type="number" unit="EA"/>
+          </div>
+        </Card>
+        <Card title="추가 옵션">
+          <Chk label="Service Kit (12 Items)" hint={`$${R.serviceKit.toLocaleString()}`} on={svcKit} set={setSvcKit}/>
+          <Chk label="CBT (Computer Based Training)" hint={`$${R.cbt}`} on={cbt} set={setCbt}/>
+          <Chk label="IBT (Internet Based Training)" hint={`$${R.ibt}`} on={ibt} set={setIbt}/>
+          <Chk label="PAN-MSCS" hint={`$${R.mscs}`} on={mscs} set={setMscs}/>
+          <Chk label="PAN-HAWK" hint={`$${R.panHawk} · Optional`} on={hawk} set={setHawk}/>
+          <div style={{marginTop:5,padding:"5px 9px",background:"#f0f4fc",borderRadius:4,fontSize:10.5,color:"#556"}}>
+            📦 자재 송품비 <b>${R.shipping}</b> — 항상 포함
+          </div>
+        </Card>
+        <Card title="간접비 / 판매가 설정">
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <Inp label="제조간접비" value={mfgR} set={setMfgR} type="number" unit="%"/>
+            <Inp label="판관간접비" value={sgaR} set={setSgaR} type="number" unit="%"/>
+          </div>
+          <Inp label="최종판매가 (Selling Price)" value={selling} set={setSelling} type="number" unit="$"/>
+          <div style={{padding:"6px 9px",background:marginAmt>=0?"#f0fdf4":"#fff1f0",
+            borderRadius:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:11,color:"#667"}}>원가 합계</span>
+            <span style={{fontSize:12.5,fontWeight:700,color:NAVY}}>${costTotal.toLocaleString()}</span>
+          </div>
+        </Card>
+      </div>
+      <div>
+        <div style={{background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,padding:"9px 14px",
+          marginBottom:10,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{fontSize:10.5,fontWeight:700,color:"#667",textTransform:"uppercase"}}>ASSUMPTIONS</span>
+          {[["제조간접비",`${mfgR}%`],["판관간접비",`${sgaR}%`],["마진율",`${marginPct}%`],["환율","₩1,490/USD"]].map(([k,v])=>(
+            <div key={k} style={{fontSize:11.5}}><span style={{color:"#889"}}>{k} </span><span style={{fontWeight:700,color:NAVY}}>{v}</span></div>
+          ))}
+          <div style={{marginLeft:"auto"}}>
+            <button onClick={doExport} style={{background:GREEN,color:"white",border:"none",
+              borderRadius:5,padding:"7px 15px",fontSize:12,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",gap:6}}>📊 Excel 다운로드</button>
+          </div>
+        </div>
+        <div style={{background:"white",borderRadius:6,overflow:"hidden",border:"1.5px solid #d0dcf0",marginBottom:10}}>
+          <div style={{background:NAVY,color:"white",padding:"10px 14px"}}>
+            <span style={{fontWeight:800,fontSize:12.5}}>직접원가 (Direct Cost)</span>
+          </div>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",minWidth:500}}>
+              <thead><tr>
+                <th style={{...TH,width:32,textAlign:"center"}}>NO</th>
+                <th style={{...TH,width:100}}>CATEGORY</th>
+                <th style={TH}>SUB-CATEGORY</th>
+                <th style={{...TH,textAlign:"right",width:40}}>수량</th>
+                <th style={{...TH,textAlign:"right",width:88}}>원가단가</th>
+                <th style={{...TH,textAlign:"right",width:88}}>원가합계</th>
+                <th style={{...TH,width:110}}>비고</th>
+              </tr></thead>
+              <tbody>
+                {sections.map((sec,si)=>sec.rows.map((row,ri)=>{
+                  const tot=(row.qty||0)*(row.unit||0);
+                  return <tr key={`${si}-${ri}`} style={{background:si%2===0?"white":"#fafbfe"}}>
+                    {ri===0&&<td rowSpan={sec.rows.length} style={{...TD,textAlign:"center",fontWeight:800,color:NAVY2,background:HL,borderRight:"1.5px solid #d8e2f4"}}>{sec.no}</td>}
+                    {ri===0&&<td rowSpan={sec.rows.length} style={{...CAT,borderRight:"1.5px solid #d0daf0"}}>{sec.cat}</td>}
+                    <td style={TD}>{row.sub}</td>
+                    <td style={{...NUM,color:"#666"}}>{row.qty??"-"}</td>
+                    <td style={{...NUM,color:"#666"}}>{row.unit!=null?fD(row.unit):"–"}</td>
+                    <td style={{...NUM,fontWeight:700,color:tot>0?NAVY:"#bbb"}}>
+                      {tot>0?fD(tot):(row.qty==null?"실비":"–")}
+                    </td>
+                    <td style={{...TD,fontSize:10,color:"#99a"}}>{row.note}</td>
+                  </tr>;
+                }))}
+                <tr style={{background:"#e4ecfb"}}>
+                  <td colSpan={5} style={{...TD,textAlign:"right",fontWeight:800,fontSize:12,color:NAVY,borderTop:"2px solid #b0c4e8"}}>직접원가 소계</td>
+                  <td style={{...NUM,fontWeight:800,fontSize:13,color:NAVY,borderTop:"2px solid #b0c4e8"}}>{fD(directTotal)}</td>
+                  <td style={{...TD,borderTop:"2px solid #b0c4e8"}}/>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style={{background:"white",borderRadius:6,overflow:"hidden",border:"1.5px solid #d0dcf0",marginBottom:10}}>
+          <div style={{background:NAVY,color:"white",padding:"10px 14px"}}><span style={{fontWeight:800,fontSize:12.5}}>간접비 (Indirect Cost)</span></div>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <tbody>
+              {[{no:9,cat:"제조간접비",desc:"공장/수도전기/가스/유지보수/관리인건비 등",val:mfgCost,pct:mfgR},
+                {no:10,cat:"판관 간접비",desc:"사무실/IT 통신/법무회계/마케팅/출장비 등",val:sgaCost,pct:sgaR}].map(r=>(
+                <tr key={r.no} style={{background:"#fffbf5"}}>
+                  <td style={{...TD,width:32,textAlign:"center",fontWeight:800,color:NAVY2,background:HL,borderRight:"1.5px solid #d8e2f4"}}>{r.no}</td>
+                  <td style={{...CAT,width:100,borderRight:"1.5px solid #d0daf0"}}>{r.cat}</td>
+                  <td style={TD}>{r.desc}</td>
+                  <td style={{...NUM,width:40}}>1</td>
+                  <td style={{...NUM,width:88}}>{fD(r.val)}</td>
+                  <td style={{...NUM,width:88,fontWeight:700,color:NAVY}}>{fD(r.val)}</td>
+                  <td style={{...TD,fontSize:10,color:"#99a",width:110}}>원가의 {r.pct}%</td>
+                </tr>))}
+              <tr style={{background:"#edf2fb"}}>
+                <td colSpan={5} style={{...TD,textAlign:"right",fontWeight:800,color:NAVY,borderTop:"1.5px solid #c0d0ea"}}>간접비 소계</td>
+                <td style={{...NUM,fontWeight:800,fontSize:13,color:NAVY,borderTop:"1.5px solid #c0d0ea"}}>{fD(indirect)}</td>
+                <td style={{...TD,borderTop:"1.5px solid #c0d0ea"}}/>
+              </tr>
+              <tr style={{background:"#dde7f8"}}>
+                <td colSpan={5} style={{...TD,textAlign:"right",fontWeight:800,fontSize:12.5,color:NAVY,borderTop:"2px solid #a0b8dc"}}>원가 TOTAL</td>
+                <td style={{...NUM,fontWeight:900,fontSize:14,color:NAVY,borderTop:"2px solid #a0b8dc"}}>{fD(costTotal)}</td>
+                <td style={{...TD,borderTop:"2px solid #a0b8dc"}}/>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{background:"white",borderRadius:6,overflow:"hidden",border:"1.5px solid #d0dcf0",marginBottom:3}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}><tbody>
+            <tr style={{background:"#fff8f0"}}>
+              <td style={{...TD,width:32,textAlign:"center",fontWeight:800,color:NAVY2,background:HL,borderRight:"1.5px solid #d8e2f4"}}>11</td>
+              <td style={{...CAT,width:100,borderRight:"1.5px solid #d0daf0"}}>이익</td>
+              <td colSpan={3} style={{...TD,fontWeight:700,color:AMBER,fontSize:12}}>마진율 {marginPct}%</td>
+              <td style={{...NUM,fontWeight:700,color:marginAmt>=0?AMBER:"#dc2626",fontSize:13,width:88}}>{fD(marginAmt)}</td>
+              <td style={{...TD,width:110}}/>
+            </tr>
+          </tbody></table>
+        </div>
+        <div style={{background:`linear-gradient(130deg,${NAVY} 0%,${STEEL} 100%)`,borderRadius:6,
+          padding:"16px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,.6)",letterSpacing:1.2,textTransform:"uppercase",marginBottom:5}}>최종판매가 (Selling Price)</div>
+            <div style={{fontSize:30,fontWeight:900,color:"white"}}>${selling.toLocaleString()}</div>
+            <div style={{fontSize:10.5,color:"rgba(255,255,255,.5)",marginTop:3}}>원가 ${costTotal.toLocaleString()} + 이익 ${marginAmt.toLocaleString()}</div>
+          </div>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,.55)",marginBottom:4}}>마진율</div>
+            <div style={{fontSize:28,fontWeight:800,color:marginAmt>=0?"#7dd3fc":"#fca5a5"}}>{marginPct}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ BWTS QUOTATION TAB ══ */
+function BwQuotTab({bwR,ship,setShip,proj,setProj,svcType,setSvcType,
+  engCnt,setEngCnt,ptQ,setPtQ,tempNexQ,setTempNexQ,tempExQ,setTempExQ,uviQ,setUviQ,
+  flowQ,setFlowQ,mfgR,setMfgR,sgaR,setSgaR}){
+  const td=todayS();
+  const R=bwR[svcType]||bwR.mro;
+  const isMro=svcType==="mro",isRefurb=svcType==="refurb",isNew=svcType==="new",isCal=svcType==="cal";
+  const rows=useMemo(()=>{
+    const r=[];
+    if(isMro){
+      r.push({no:1,label:"기본 마진",qty:1,sell:R.baseMarginSell,cost:R.baseMarginCost,note:"영업 마진"});
+      if(engCnt>0)r.push({no:2,label:"ENGINEER",qty:engCnt,sell:R.engineerSell,cost:R.engineerCost,note:`${engCnt}명 파견`});
+    }
+    if(ptQ>0)r.push({no:r.length+1,label:"Pressure Transmitter (PT)",qty:ptQ,sell:R.ptSell,cost:R.ptCost,note:isNew?"₩231,000/EA":isCal?"자체Cal":"자체Cal·운영비반영"});
+    if(tempNexQ>0)r.push({no:r.length+1,label:"Temp Transmitter (NON-EX)",qty:tempNexQ,sell:R.tempNexSell,cost:R.tempNexCost,note:"자체Cal+10년상각$17"});
+    if(tempExQ>0)r.push({no:r.length+1,label:"Temp Transmitter (EX TYPE)",qty:tempExQ,sell:R.tempExSell,cost:R.tempExCost,note:"자체Cal+10년상각$38"});
+    if(uviQ>0)r.push({no:r.length+1,label:"UV Intensity Sensor (UVI)",qty:uviQ,sell:R.uviSell,cost:R.uviCost,note:"독일Cal$166+상각$39"});
+    if(isMro&&flowQ>0)r.push({no:r.length+1,label:"FLOW METER",qty:flowQ,sell:R.flowSell,cost:R.flowCost,note:"자체Cal+10년상각$38"});
+    if(isRefurb)r.push({no:r.length+1,label:"송품비 (Shipping)",qty:1,sell:R.shippingSell,cost:R.shippingCost,note:"EXW Busan"});
+    return r;
+  },[svcType,R,engCnt,ptQ,tempNexQ,tempExQ,uviQ,flowQ]);
+  const directSell=rows.reduce((s,r)=>s+r.qty*(r.sell||0),0);
+  const directCost=rows.reduce((s,r)=>s+r.qty*(r.cost||0),0);
+  const mfgCost=Math.round(directCost*mfgR/100),sgaCost=Math.round(directCost*sgaR/100);
+  const indirect=mfgCost+sgaCost,totalCost=directCost+indirect,totalSell=directSell;
+  const marginAmt=totalSell-totalCost;
+  const marginPct=totalSell>0?((marginAmt/totalSell)*100).toFixed(1):"0.0";
+  const qTitle=ship?`[QUOTE] BWTS ${BW_LABELS[svcType]}_${ship.toUpperCase()}${proj?` (${proj})`:""} ${td}`:"";
+  async function doExport(){
+    try{await exportBwXlsx({rows,directSell,directCost,mfgCost,sgaCost,indirect,totalCost,
+      totalSell,marginAmt,marginPct,mfgR,sgaR,ship,proj,svcType});}
+    catch(e){alert("Excel 오류: "+e.message);}
+  }
+  return(
+    <div style={{display:"grid",gridTemplateColumns:"320px 1fr",gap:14,padding:"14px 16px",alignItems:"start"}}>
+      <div>
+        <Card title="선박 정보">
+          <Inp label="선명 (Ship Name)" value={ship} set={setShip}/>
+          <Inp label="프로젝트 No." value={proj} set={setProj}/>
+          {qTitle&&<div style={{fontSize:9.5,color:STEEL,marginTop:3,wordBreak:"break-all"}}>{qTitle}</div>}
+        </Card>
+        <Card title="서비스 타입">
+          <div style={{fontSize:10,color:"#667",marginBottom:3,textTransform:"uppercase"}}>서비스 선택</div>
+          <select value={svcType} onChange={e=>setSvcType(e.target.value)} style={{
+            width:"100%",padding:"7px 10px",border:"1.5px solid #b8c8e8",borderRadius:4,
+            fontSize:13,fontWeight:700,background:"#e8f0fc",color:NAVY,marginBottom:8}}>
+            <option value="mro">① MRO Full Service</option>
+            <option value="refurb">② Refurb 판매</option>
+            <option value="new">③ 신품 구매</option>
+            <option value="cal">④ Cal-Only</option>
+          </select>
+          <div style={{padding:"6px 9px",background:"#f0f4fc",borderRadius:4,fontSize:10.5,color:NAVY2,fontWeight:600}}>
+            {BW_TITLE[svcType]}
+          </div>
+        </Card>
+        <Card title="수량 입력">
+          {[
+            ...(isMro?[["엔지니어","명",engCnt,setEngCnt]]:[ ]),
+            ["PT","EA",ptQ,setPtQ],
+            ["Temp NON-EX","EA",tempNexQ,setTempNexQ],
+            ["Temp EX","EA",tempExQ,setTempExQ],
+            ["UVI","EA",uviQ,setUviQ],
+            ...(isMro?[["Flow Meter","EA",flowQ,setFlowQ]]:[]),
+          ].map(([lbl,unit,val,set])=>(
+            <div key={lbl} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              padding:"5px 0",borderBottom:"1px solid #eef0f8"}}>
+              <span style={{fontSize:12,color:NAVY,minWidth:90}}>{lbl}</span>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <input type="number" value={val} min={0}
+                  onChange={e=>set(Math.max(0,Number(e.target.value)))}
+                  style={{width:60,padding:"4px 7px",border:"1.5px solid #b8c8e8",borderRadius:4,
+                    fontSize:13,background:"#e8f0fc",color:NAVY,fontWeight:700,
+                    textAlign:"right",fontFamily:"monospace"}}/>
+                <span style={{fontSize:11,color:"#888",width:22}}>{unit}</span>
+              </div>
+            </div>
+          ))}
+        </Card>
+        <Card title="간접비 설정">
+          {[["제조간접비",mfgR,setMfgR],[" 판관간접비",sgaR,setSgaR]].map(([lbl,val,set])=>(
+            <div key={lbl} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              padding:"5px 0",borderBottom:"1px solid #eef0f8"}}>
+              <span style={{fontSize:12,color:NAVY}}>{lbl}</span>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <input type="number" value={val} min={0}
+                  onChange={e=>set(Number(e.target.value))}
+                  style={{width:60,padding:"4px 7px",border:"1.5px solid #b8c8e8",borderRadius:4,
+                    fontSize:13,background:"#e8f0fc",color:NAVY,fontWeight:700,
+                    textAlign:"right",fontFamily:"monospace"}}/>
+                <span style={{fontSize:11,color:"#888",width:14}}>%</span>
+              </div>
+            </div>
+          ))}
+          <div style={{marginTop:8,padding:"6px 9px",background:"#f0fdf4",borderRadius:4,display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontSize:11,color:"#667"}}>원가 합계</span>
+            <span style={{fontSize:12.5,fontWeight:700,color:NAVY}}>${totalCost.toLocaleString()}</span>
+          </div>
+        </Card>
+      </div>
+      <div>
+        <div style={{background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,padding:"9px 14px",
+          marginBottom:10,display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{fontSize:10.5,fontWeight:700,color:"#667",textTransform:"uppercase"}}>ASSUMPTIONS</span>
+          {[["제조간접비",`${mfgR}%`],["판관간접비",`${sgaR}%`],["마진율",`${marginPct}%`]].map(([k,v])=>(
+            <div key={k} style={{fontSize:11.5}}><span style={{color:"#889"}}>{k} </span><span style={{fontWeight:700,color:NAVY}}>{v}</span></div>
+          ))}
+          <div style={{marginLeft:"auto"}}>
+            <button onClick={doExport} style={{background:GREEN,color:"white",border:"none",
+              borderRadius:5,padding:"7px 15px",fontSize:12,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",gap:6}}>📊 Excel 다운로드</button>
+          </div>
+        </div>
+        <div style={{background:"white",borderRadius:6,overflow:"hidden",border:"1.5px solid #d0dcf0",marginBottom:10}}>
+          <div style={{background:NAVY,color:"white",padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontWeight:800,fontSize:12.5}}>직접원가 (Direct Cost)</span>
+            <span style={{fontSize:11,opacity:.75,background:"rgba(255,255,255,.1)",padding:"2px 10px",borderRadius:4}}>{BW_TITLE[svcType]}</span>
+          </div>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",minWidth:580}}>
+              <thead><tr>
+                <th style={{...TH,width:32,textAlign:"center"}}>NO</th>
+                <th style={TH}>항목 (Item)</th>
+                <th style={{...TH,textAlign:"right",width:40}}>수량</th>
+                <th style={{...TH,textAlign:"right",width:85}}>판매단가</th>
+                <th style={{...TH,textAlign:"right",width:85}}>판매금액</th>
+                <th style={{...TH,textAlign:"right",width:85}}>원가단가</th>
+                <th style={{...TH,textAlign:"right",width:85}}>원가금액</th>
+                <th style={{...TH,width:110}}>비고</th>
+              </tr></thead>
+              <tbody>
+                {rows.map((row,i)=>{
+                  const sv=row.qty*(row.sell||0),cv=row.qty*(row.cost||0);
+                  return <tr key={i} style={{background:i%2===0?"white":"#fafbfe"}}>
+                    <td style={{...NUM,width:32,textAlign:"center",color:NAVY2,fontWeight:700}}>{row.no}</td>
+                    <td style={TD}>{row.label}</td>
+                    <td style={{...NUM,color:STEEL,fontWeight:700}}>{row.qty}</td>
+                    <td style={{...NUM,color:STEEL,fontWeight:600}}>{fD(row.sell)}</td>
+                    <td style={{...NUM,fontWeight:700,color:NAVY}}>{fD(sv)}</td>
+                    <td style={{...NUM,color:"#888"}}>{row.cost>0?fD(row.cost):"–"}</td>
+                    <td style={{...NUM,color:"#888"}}>{cv>0?fD(cv):"–"}</td>
+                    <td style={{...TD,fontSize:10,color:"#99a"}}>{row.note}</td>
+                  </tr>;
+                })}
+                <tr style={{background:"#e4ecfb"}}>
+                  <td colSpan={4} style={{...TD,textAlign:"right",fontWeight:800,fontSize:12,color:NAVY,borderTop:"2px solid #b0c4e8"}}>직접원가 소계</td>
+                  <td style={{...NUM,fontWeight:800,fontSize:13,color:NAVY,borderTop:"2px solid #b0c4e8"}}>{fD(directSell)}</td>
+                  <td style={{...TD,borderTop:"2px solid #b0c4e8"}}/>
+                  <td style={{...NUM,fontWeight:800,fontSize:13,color:NAVY,borderTop:"2px solid #b0c4e8"}}>{fD(directCost)}</td>
+                  <td style={{...TD,borderTop:"2px solid #b0c4e8"}}/>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style={{background:"white",borderRadius:6,overflow:"hidden",border:"1.5px solid #d0dcf0",marginBottom:10}}>
+          <div style={{background:NAVY,color:"white",padding:"10px 14px"}}><span style={{fontWeight:800,fontSize:12.5}}>간접비 (Indirect Cost)</span></div>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <tbody>
+              {[{cat:"제조간접비 (원가의 "+mfgR+"%)",val:mfgCost},{cat:"판관간접비 (원가의 "+sgaR+"%)",val:sgaCost}].map((r,i)=>(
+                <tr key={i} style={{background:"#fffbf5"}}>
+                  <td style={TD}>{r.cat}</td>
+                  <td style={{...NUM,fontWeight:700,color:NAVY,width:88}}>{fD(r.val)}</td>
+                </tr>))}
+              <tr style={{background:"#edf2fb"}}>
+                <td style={{...TD,fontWeight:800,color:NAVY}}>간접비 소계</td>
+                <td style={{...NUM,fontWeight:800,fontSize:13,color:NAVY}}>{fD(indirect)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{background:`linear-gradient(130deg,${NAVY} 0%,${STEEL} 100%)`,borderRadius:6,padding:"16px 22px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}}>
+            {[["판매금액 합계","$"+totalSell.toLocaleString()],["원가 합계","$"+totalCost.toLocaleString()],["마진율",marginPct+"%"]].map(([k,v],i)=>(
+              <div key={i}>
+                <div style={{fontSize:10,color:"rgba(255,255,255,.6)",marginBottom:5,textTransform:"uppercase"}}>{k}</div>
+                <div style={{fontSize:i===2?26:20,fontWeight:900,color:i===2?(marginAmt>=0?"#7dd3fc":"#fca5a5"):"white"}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,.2)",
+            display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>마진 (이익금)</span>
+            <span style={{fontSize:18,fontWeight:800,color:marginAmt>=0?"#86efac":"#fca5a5"}}>${marginAmt.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ RATE SETTINGS TAB ══ */
+function RatesTab({scR,setScR,bwR,setBwR,scDef,bwDef}){
+  const SC_GROUPS=[
+    {title:"MANPOWER",items:[{key:"working",label:"Working Rate (per man-day)"},{key:"travel",label:"Travel Rate (per man-day)"}]},
+    {title:"SENSOR — PAH",items:[{key:"pahCal",label:"PAH Sensor Calibration"},{key:"pahPPS",label:"PAH PPS 재질 교체"},
+      {key:"pahF360",label:"PAH Filter (IF360)"},{key:"pahF254",label:"PAH Filter (IF254)"},
+      {key:"pahLamp",label:"PAH Lamp Replacement"},{key:"pahPurchase",label:"PAH Sensor Purchase (안전재고)"},
+      {key:"pahDepreciation",label:"PAH Sensor 감가상각"}]},
+    {title:"SENSOR — TURBIDITY",items:[{key:"turCal",label:"Turbidity Sensor Calibration"},
+      {key:"turPurchase",label:"Turbidity Sensor Purchase (안전재고)"},{key:"turDepreciation",label:"Turbidity Sensor 감가상각"}]},
+    {title:"SENSOR — 공통",items:[{key:"sensorCable",label:"Sensor Cable Replacement"},{key:"sensorDelivery",label:"Sensor Delivery (Calibration)"}]},
+    {title:"OPTIONS",items:[{key:"serviceKit",label:"Service Kit (12 Items)"},{key:"cbt",label:"CBT Training"},
+      {key:"ibt",label:"IBT Training"},{key:"mscs",label:"PAN-MSCS"},{key:"panHawk",label:"PAN-HAWK"},{key:"shipping",label:"자재 송품비"}]},
+  ];
+  // BWTS 단가: pairs = [{label, sellKey, costKey}]
+  const BW_GROUPS=[
+    {type:"mro",title:"① MRO Full Service",pairs:[
+      {l:"기본 마진",sk:"baseMarginSell",ck:"baseMarginCost"},
+      {l:"Engineer",sk:"engineerSell",ck:"engineerCost"},
+      {l:"PT",sk:"ptSell",ck:"ptCost"},
+      {l:"Temp NON-EX",sk:"tempNexSell",ck:"tempNexCost"},
+      {l:"Temp EX",sk:"tempExSell",ck:"tempExCost"},
+      {l:"UVI",sk:"uviSell",ck:"uviCost"},
+      {l:"Flow Meter",sk:"flowSell",ck:"flowCost"},
+    ]},
+    {type:"refurb",title:"② Refurb 판매",pairs:[
+      {l:"PT",sk:"ptSell",ck:"ptCost"},
+      {l:"Temp NON-EX",sk:"tempNexSell",ck:"tempNexCost"},
+      {l:"Temp EX",sk:"tempExSell",ck:"tempExCost"},
+      {l:"UVI",sk:"uviSell",ck:"uviCost"},
+      {l:"Shipping",sk:"shippingSell",ck:"shippingCost"},
+    ]},
+    {type:"new",title:"③ 신품 구매",pairs:[
+      {l:"PT",sk:"ptSell",ck:"ptCost"},
+      {l:"Temp NON-EX",sk:"tempNexSell",ck:"tempNexCost"},
+      {l:"Temp EX",sk:"tempExSell",ck:"tempExCost"},
+      {l:"UVI",sk:"uviSell",ck:"uviCost"},
+    ]},
+    {type:"cal",title:"④ Cal-Only",pairs:[
+      {l:"PT",sk:"ptSell",ck:"ptCost"},
+      {l:"Temp NON-EX",sk:"tempNexSell",ck:"tempNexCost"},
+      {l:"Temp EX",sk:"tempExSell",ck:"tempExCost"},
+      {l:"UVI",sk:"uviSell",ck:"uviCost"},
+    ]},
+  ];
+  const scMod=Object.keys(scDef).filter(k=>scR[k]!==scDef[k]).length;
+  const bwMod=Object.values(bwDef).reduce((s,dv,i)=>{
+    const t=Object.keys(bwDef)[i];return s+Object.keys(dv).filter(k=>bwR[t]?.[k]!==dv[k]).length;
+  },0);
+  // Sensor comparison table data
+  const sensorRows=[
+    {label:"Pressure Transmitter (PT)",cost:bwR.new.ptCost,new:bwR.new.ptSell,cal:bwR.cal.ptSell,refurb:bwR.refurb.ptSell,mro:bwR.mro.ptSell},
+    {label:"Temp Transmitter (NON-EX)",cost:bwR.new.tempNexCost,new:bwR.new.tempNexSell,cal:bwR.cal.tempNexSell,refurb:bwR.refurb.tempNexSell,mro:bwR.mro.tempNexSell},
+    {label:"Temp Transmitter (EX TYPE)",cost:bwR.new.tempExCost,new:bwR.new.tempExSell,cal:bwR.cal.tempExSell,refurb:bwR.refurb.tempExSell,mro:bwR.mro.tempExSell},
+    {label:"UV Intensity Sensor (UVI)",cost:bwR.new.uviCost,new:bwR.new.uviSell,cal:bwR.cal.uviSell,refurb:bwR.refurb.uviSell,mro:bwR.mro.uviSell},
+  ];
+  return(
+    <div style={{padding:"14px 16px"}}>
+      <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"center"}}>
+        <div>
+          <h2 style={{fontSize:15,fontWeight:800,color:NAVY}}>원가 설정 (Rate Settings)</h2>
+          <p style={{fontSize:11,color:"#888",marginTop:3}}>수정한 금액은 견적 탭에 즉시 반영됩니다.
+            {(scMod+bwMod)>0&&<span style={{color:AMBER,marginLeft:8}}>• {scMod+bwMod}개 항목 수정됨</span>}
+          </p>
+        </div>
+        <div style={{display:"flex",gap:8,marginLeft:"auto"}}>
+          <button onClick={()=>setScR(deepClone(scDef))} style={{background:"white",color:NAVY2,
+            border:`1.5px solid ${NAVY2}`,borderRadius:5,padding:"6px 12px",fontSize:11.5,fontWeight:700,cursor:"pointer"}}>
+            Scrubber 초기화
+          </button>
+          <button onClick={()=>setBwR(deepClone(bwDef))} style={{background:"white",color:NAVY2,
+            border:`1.5px solid ${NAVY2}`,borderRadius:5,padding:"6px 12px",fontSize:11.5,fontWeight:700,cursor:"pointer"}}>
+            BWTS 초기화
+          </button>
+        </div>
+      </div>
+      <h3 style={{fontSize:13,fontWeight:800,color:NAVY,marginBottom:10,padding:"6px 0",borderBottom:"2px solid #d0dcf0"}}>
+        🔧 SCRUBBER 단가
+      </h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(380px,1fr))",gap:12,marginBottom:20}}>
+        {SC_GROUPS.map(group=>(
+          <div key={group.title} style={{background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,overflow:"hidden"}}>
+            <div style={{background:NAVY2,color:"white",padding:"7px 13px",fontSize:11.5,fontWeight:700}}>{group.title}</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr style={{background:HL}}>
+                <th style={{padding:"5px 11px",textAlign:"left",fontSize:10,color:"#667",fontWeight:600}}>항목</th>
+                <th style={{padding:"5px 11px",textAlign:"right",fontSize:10,color:"#667",fontWeight:600,width:80}}>기본값</th>
+                <th style={{padding:"5px 10px",textAlign:"center",fontSize:10,color:"#667",fontWeight:600,width:100}}>설정값</th>
+              </tr></thead>
+              <tbody>
+                {group.items.map(item=>{
+                  const mod=scR[item.key]!==scDef[item.key];
+                  return <tr key={item.key} style={{background:mod?"#fff8e8":"white",borderTop:"1px solid #eef0f8"}}>
+                    <td style={{padding:"6px 11px",fontSize:11,color:mod?AMBER:NAVY}}>
+                      {item.label}{mod&&<span style={{fontSize:9,color:AMBER,marginLeft:5,background:"#fff3cd",padding:"1px 4px",borderRadius:3}}>수정됨</span>}
+                    </td>
+                    <td style={{padding:"6px 11px",textAlign:"right",fontSize:11,color:"#999",fontFamily:"monospace"}}>${scDef[item.key]}</td>
+                    <td style={{padding:"4px 7px"}}>
+                      <input type="number" value={scR[item.key]}
+                        onChange={e=>setScR(prev=>({...prev,[item.key]:Number(e.target.value)||0}))}
+                        style={{width:"100%",padding:"4px 6px",border:`1.5px solid ${mod?AMBER:"#b8c8e8"}`,
+                          borderRadius:4,fontSize:11.5,background:mod?"#fff8e8":"#e8f0fc",
+                          color:NAVY,fontWeight:700,textAlign:"right",fontFamily:"monospace"}}/>
+                    </td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+      <h3 style={{fontSize:13,fontWeight:800,color:NAVY,marginBottom:10,padding:"6px 0",borderBottom:"2px solid #d0dcf0"}}>
+        🔧 BWTS 단가
+      </h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(480px,1fr))",gap:12,marginBottom:20}}>
+        {BW_GROUPS.map(group=>(
+          <div key={group.type} style={{background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,overflow:"hidden"}}>
+            <div style={{background:NAVY2,color:"white",padding:"7px 13px",fontSize:11.5,fontWeight:700}}>{group.title}</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr style={{background:HL}}>
+                <th style={{padding:"5px 10px",textAlign:"left",fontSize:10,color:"#667",fontWeight:600}}>항목</th>
+                <th style={{padding:"5px 8px",textAlign:"right",fontSize:10,color:"#16a34a",fontWeight:700,width:72}}>기본판매</th>
+                <th style={{padding:"5px 8px",textAlign:"right",fontSize:10,color:"#888",fontWeight:600,width:72}}>기본원가</th>
+                <th style={{padding:"5px 8px",textAlign:"right",fontSize:10,color:"#16a34a",fontWeight:700,width:88}}>설정판매</th>
+                <th style={{padding:"5px 8px",textAlign:"right",fontSize:10,color:"#888",fontWeight:600,width:88}}>설정원가</th>
+              </tr></thead>
+              <tbody>
+                {group.pairs.map(pair=>{
+                  const cs=bwR[group.type]?.[pair.sk]??0, cc=bwR[group.type]?.[pair.ck]??0;
+                  const ds=bwDef[group.type]?.[pair.sk]??0, dc=bwDef[group.type]?.[pair.ck]??0;
+                  const modS=cs!==ds, modC=cc!==dc, mod=modS||modC;
+                  return <tr key={pair.l} style={{background:mod?"#fff8e8":"white",borderTop:"1px solid #eef0f8"}}>
+                    <td style={{padding:"5px 10px",fontSize:11.5,color:mod?AMBER:NAVY,fontWeight:mod?700:400}}>
+                      {pair.l}{mod&&<span style={{fontSize:9,color:AMBER,marginLeft:5,background:"#fff3cd",padding:"1px 4px",borderRadius:3}}>수정</span>}
+                    </td>
+                    <td style={{padding:"5px 8px",textAlign:"right",fontSize:11,color:"#bbb",fontFamily:"monospace"}}>${ds}</td>
+                    <td style={{padding:"5px 8px",textAlign:"right",fontSize:11,color:"#bbb",fontFamily:"monospace"}}>${dc}</td>
+                    <td style={{padding:"3px 5px"}}>
+                      <input type="number" value={cs}
+                        onChange={e=>setBwR(prev=>({...prev,[group.type]:{...prev[group.type],[pair.sk]:Number(e.target.value)||0}}))}
+                        style={{width:"100%",padding:"3px 6px",border:`1.5px solid ${modS?AMBER:"#b8c8e8"}`,
+                          borderRadius:4,fontSize:12,background:modS?"#fff8e8":"#e8f0fc",
+                          color:"#16a34a",fontWeight:700,textAlign:"right",fontFamily:"monospace"}}/>
+                    </td>
+                    <td style={{padding:"3px 5px"}}>
+                      <input type="number" value={cc}
+                        onChange={e=>setBwR(prev=>({...prev,[group.type]:{...prev[group.type],[pair.ck]:Number(e.target.value)||0}}))}
+                        style={{width:"100%",padding:"3px 6px",border:`1.5px solid ${modC?AMBER:"#b8c8e8"}`,
+                          borderRadius:4,fontSize:12,background:modC?"#fff8e8":"#e8f0fc",
+                          color:"#888",fontWeight:700,textAlign:"right",fontFamily:"monospace"}}/>
+                    </td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+      <h3 style={{fontSize:13,fontWeight:800,color:NAVY,marginBottom:10,padding:"6px 0",borderBottom:"2px solid #d0dcf0"}}>
+        📊 BWTS 센서 단가 비교표 (현재 설정값 기준)
+      </h3>
+      <div style={{display:"inline-block",background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,overflow:"hidden",maxWidth:"100%"}}>
+        <table style={{borderCollapse:"collapse",tableLayout:"auto"}}>
+          <thead><tr>
+            {["센서","원가(EA)","①신품구매","②Cal-Only","③Refurb판매","MRO가입"].map((h,i)=>(
+              <th key={i} style={{...TH,textAlign:i===0?"left":"right",whiteSpace:"nowrap",padding:"7px 14px"}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {sensorRows.map((row,i)=>(
+              <tr key={i} style={{background:i%2===0?"white":"#f9fafd"}}>
+                <td style={{...TD,whiteSpace:"nowrap",padding:"5px 14px"}}>{row.label}</td>
+                <td style={{...NUM,color:"#999",padding:"5px 14px"}}>{fD(row.cost)}</td>
+                <td style={{...NUM,color:NAVY,fontWeight:600,padding:"5px 14px"}}>{fD(row.new)}</td>
+                <td style={{...NUM,color:NAVY,fontWeight:600,padding:"5px 14px"}}>{fD(row.cal)}</td>
+                <td style={{...NUM,color:NAVY,fontWeight:600,padding:"5px 14px"}}>{fD(row.refurb)}</td>
+                <td style={{...NUM,color:STEEL,fontWeight:800,padding:"5px 14px"}}>{fD(row.mro)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{padding:"5px 12px",background:"#f5f7fc",fontSize:10,color:"#888"}}>
+          * 원가 = 신품원가 또는 독일Cal비용 + 10년 감가상각 / 환율: ₩1,490/USD
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ DEFAULT / LOG TAB ══ */
+function DefaultTab({scR,bwR,scDef,bwDef,setScDef,setBwDef,setScR,setBwR}){
+  const [logs,setLogs]=useState(()=>getLogs());
+  const [expanded,setExpanded]=useState(null);
+  function saveAsDefault(){
+    saveDef(deepClone(scR),deepClone(bwR));
+    setScDef(deepClone(scR));setBwDef(deepClone(bwR));
+    setLogs(getLogs());
+    alert("현재 설정이 기본값으로 저장되었습니다.");
+  }
+  function restoreLog(entry){
+    if(!window.confirm("이 시점 값으로 복원할까요?"))return;
+    setScDef(deepClone(entry.sc));setBwDef(deepClone(entry.bw));
+    setScR(deepClone(entry.sc));setBwR(deepClone(entry.bw));
+  }
+  const SC_LABELS={working:"Working/MD",travel:"Travel/MD",pahCal:"PAH Cal",pahPPS:"PAH PPS",
+    pahF360:"PAH F360",pahF254:"PAH F254",pahLamp:"PAH Lamp",pahPurchase:"PAH Purchase",pahDepreciation:"PAH Dep",
+    turCal:"TUR Cal",turPurchase:"TUR Purchase",turDepreciation:"TUR Dep",
+    sensorCable:"Cable",sensorDelivery:"Delivery",serviceKit:"Service Kit",
+    cbt:"CBT",ibt:"IBT",mscs:"PAN-MSCS",panHawk:"PAN-HAWK",shipping:"Shipping"};
+  return(
+    <div style={{padding:"14px 16px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div>
+          <h2 style={{fontSize:15,fontWeight:800,color:NAVY}}>기본값 설정 & 변경 이력</h2>
+          <p style={{fontSize:11,color:"#888",marginTop:3}}>"현재 설정을 기본값으로 저장"하면 초기화 기준값이 바뀌고 이력에 기록됩니다.</p>
+        </div>
+        <button onClick={saveAsDefault} style={{background:STEEL,color:"white",border:"none",
+          borderRadius:5,padding:"9px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+          💾 현재 설정을 기본값으로 저장
+        </button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
+        <div style={{background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,overflow:"hidden"}}>
+          <div style={{background:NAVY2,color:"white",padding:"7px 13px",fontSize:11.5,fontWeight:700}}>현재 기본값 — SCRUBBER</div>
+          <div style={{padding:"10px 13px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3px 16px"}}>
+              {Object.entries(scDef).map(([k,v])=>(
+                <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid #f0f0f0",fontSize:11}}>
+                  <span style={{color:"#667"}}>{SC_LABELS[k]||k}</span>
+                  <span style={{fontWeight:700,color:NAVY,fontFamily:"monospace"}}>${v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,overflow:"hidden"}}>
+          <div style={{background:NAVY2,color:"white",padding:"7px 13px",fontSize:11.5,fontWeight:700}}>현재 기본값 — BWTS (UVI 기준)</div>
+          <div style={{padding:"10px 13px"}}>
+            {[["MRO",bwDef.mro,["uviSell","uviCost","engineerSell","engineerCost"]],
+              ["Refurb",bwDef.refurb,["uviSell","uviCost","ptSell","shippingSell"]],
+              ["신품",bwDef.new,["uviSell","uviCost","ptSell","ptCost"]],
+              ["Cal-Only",bwDef.cal,["uviSell","uviCost","ptSell","tempNexSell"]]].map(([t,d,keys])=>(
+              <div key={t} style={{marginBottom:8}}>
+                <div style={{fontSize:10,fontWeight:700,color:NAVY2,marginBottom:3,textTransform:"uppercase"}}>{t}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2px 12px"}}>
+                  {keys.map(k=>(
+                    <div key={k} style={{display:"flex",justifyContent:"space-between",fontSize:10.5,padding:"2px 0",borderBottom:"1px solid #f0f0f0"}}>
+                      <span style={{color:"#888"}}>{k.replace(/Sell$/," 판매").replace(/Cost$/," 원가")}</span>
+                      <span style={{fontFamily:"monospace",fontWeight:700,color:NAVY}}>${d[k]??0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <h3 style={{fontSize:13,fontWeight:800,color:NAVY,marginBottom:12,padding:"6px 0",borderBottom:"2px solid #d0dcf0"}}>
+        📋 변경 이력 ({logs.length}건)
+        <span style={{fontSize:10,fontWeight:400,color:"#888",marginLeft:8}}>같은 브라우저에서 유지 / 캐시 삭제 시 초기화</span>
+      </h3>
+      {logs.length===0&&<div style={{color:"#aaa",fontSize:12,padding:20,textAlign:"center"}}>저장된 이력이 없습니다.</div>}
+      {logs.map((log,i)=>(
+        <div key={i} style={{background:"white",border:"1.5px solid #d0dcf0",borderRadius:6,marginBottom:8,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",cursor:"pointer",
+            background:expanded===i?"#f0f4fc":"white"}} onClick={()=>setExpanded(expanded===i?null:i)}>
+            <span style={{fontSize:13,fontWeight:700,color:NAVY}}>📅 {log.date}</span>
+            <span style={{fontSize:11,color:"#888"}}>저장됨</span>
+            <button onClick={e=>{e.stopPropagation();restoreLog(log);}} style={{marginLeft:"auto",
+              background:"white",color:NAVY2,border:`1px solid ${NAVY2}`,
+              borderRadius:4,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>
+              이 값으로 복원
+            </button>
+            <span style={{fontSize:12,color:"#888"}}>{expanded===i?"▲":"▼"}</span>
+          </div>
+          {expanded===i&&(
+            <div style={{padding:"10px 14px",borderTop:"1px solid #e8edf8",background:"#f9fafd"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:NAVY2,marginBottom:6}}>SCRUBBER 단가</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"2px 12px"}}>
+                    {Object.entries(log.sc||{}).map(([k,v])=>(
+                      <div key={k} style={{display:"flex",justifyContent:"space-between",fontSize:10.5,padding:"2px 0",borderBottom:"1px solid #eee"}}>
+                        <span style={{color:"#888"}}>{SC_LABELS[k]||k}</span>
+                        <span style={{fontFamily:"monospace",fontWeight:700,color:NAVY}}>${v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:NAVY2,marginBottom:6}}>BWTS 단가 (요약)</div>
+                  {["mro","refurb","new","cal"].map(t=>(
+                    <div key={t} style={{marginBottom:6}}>
+                      <span style={{fontSize:9.5,fontWeight:700,color:NAVY2,textTransform:"uppercase"}}>{t} — </span>
+                      {Object.entries(log.bw?.[t]||{}).slice(0,4).map(([k,v])=>(
+                        <span key={k} style={{fontSize:10,color:"#667",marginRight:8}}>
+                          {k.replace(/Sell$/,"↑").replace(/Cost$/,"↓")}:${v}
+                        </span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ══ ROOT APP ══ */
+function App(){
+  const saved=loadSaved();
+  const [scDef,setScDef]=useState(()=>saved?.sc?deepClone(saved.sc):deepClone(SC_DEF));
+  const [bwDef,setBwDef]=useState(()=>saved?.bw?deepClone(saved.bw):deepClone(BW_DEF));
+  const [scR,setScR]=useState(()=>saved?.sc?deepClone(saved.sc):deepClone(SC_DEF));
+  const [bwR,setBwR]=useState(()=>saved?.bw?deepClone(saved.bw):deepClone(BW_DEF));
+  const [tab,setTab]=useState(0);
+  // Scrubber state
+  const [scShip,setScShip]=useState(""),scProj=useState("")[0],[,setScProj]=useState("");
+  const [scProjV,setScProjV]=useState("");
+  const [v1,setV1]=useState(true),v1t=useState(true)[0],[,setV1t]=useState(true);
+  const [v1tV,setV1tV]=useState(true);
+  const [v2,setV2]=useState(false),v2t=useState(false)[0],[,setV2t]=useState(false);
+  const [v2V,setV2V]=useState(false),[v2tV,setV2tV]=useState(false);
+  const [pahQ,setPahQ]=useState(1),[turQ,setTurQ]=useState(2);
+  const [svcKit,setSvcKit]=useState(true),[cbt,setCbt]=useState(true),[ibt,setIbt]=useState(false);
+  const [mscs,setMscs]=useState(true),[hawk,setHawk]=useState(false);
+  const [scMfg,setScMfg]=useState(10),[scSga,setScSga]=useState(15),[scSell,setScSell]=useState(38000);
+  // BWTS state
+  const [bwShip,setBwShip]=useState(""),[bwProj,setBwProj]=useState("");
+  const [svcType,setSvcType]=useState("mro");
+  const [engCnt,setEngCnt]=useState(2),[ptQ,setPtQ]=useState(2),[tempNexQ,setTempNexQ]=useState(1);
+  const [tempExQ,setTempExQ]=useState(0),[uviQ,setUviQ]=useState(1),[flowQ,setFlowQ]=useState(1);
+  const [bwMfg,setBwMfg]=useState(10),[bwSga,setBwSga]=useState(15);
+
+  const TABS=[["📋","Scrubber 견적"],["📋","BWTS 견적"],["⚙️","원가 설정"],["🏠","DEFAULT / LOG"]];
+  return(
+    <div style={{minHeight:"100vh",background:"#f0f3f9"}}>
+      <div style={{background:`linear-gradient(130deg,${NAVY} 0%,${STEEL} 100%)`,
+        padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",
+        boxShadow:"0 3px 14px rgba(13,31,69,.3)"}}>
+        <div>
+          <div style={{fontSize:9.5,opacity:.65,letterSpacing:1.5,textTransform:"uppercase",marginBottom:3,color:"white"}}>
+            PANASIA Co., Ltd. — AM Sales Team
+          </div>
+          <h1 style={{color:"white",fontSize:18,fontWeight:800,margin:0}}>MRO 원가 계산기</h1>
+          <p style={{color:"rgba(255,255,255,.65)",fontSize:10.5,marginTop:3}}>Scrubber & BWTS · 2-Year Contract Basis</p>
+        </div>
+        <div style={{color:"white",textAlign:"right"}}>
+          <div style={{fontSize:9.5,opacity:.6,textTransform:"uppercase",letterSpacing:1}}>견적일자</div>
+          <div style={{fontSize:15,fontWeight:700}}>{todayS()}</div>
+        </div>
+      </div>
+      <div style={{background:"white",borderBottom:"2px solid #d0dcf0",display:"flex",padding:"0 16px"}}>
+        {TABS.map(([icon,label],i)=>(
+          <button key={i} onClick={()=>setTab(i)} style={{
+            padding:"10px 16px",border:"none",background:"none",cursor:"pointer",
+            fontSize:12.5,fontWeight:tab===i?800:500,color:tab===i?STEEL:"#888",
+            borderBottom:tab===i?`3px solid ${STEEL}`:"3px solid transparent",
+            marginBottom:-2,display:"flex",alignItems:"center",gap:6}}>
+            {icon} {label}
+          </button>
+        ))}
+      </div>
+      {tab===0&&<ScQuotTab scR={scR} ship={scShip} setShip={setScShip} proj={scProjV} setProj={setScProjV}
+        v1={v1} setV1={setV1} v1t={v1tV} setV1t={setV1tV}
+        v2={v2V} setV2={setV2V} v2t={v2tV} setV2t={setV2tV}
+        pahQty={pahQ} setPah={setPahQ} turQty={turQ} setTur={setTurQ}
+        svcKit={svcKit} setSvcKit={setSvcKit} cbt={cbt} setCbt={setCbt}
+        ibt={ibt} setIbt={setIbt} mscs={mscs} setMscs={setMscs} hawk={hawk} setHawk={setHawk}
+        mfgR={scMfg} setMfgR={setScMfg} sgaR={scSga} setSgaR={setScSga}
+        selling={scSell} setSelling={setScSell}/>}
+      {tab===1&&<BwQuotTab bwR={bwR} ship={bwShip} setShip={setBwShip} proj={bwProj} setProj={setBwProj}
+        svcType={svcType} setSvcType={setSvcType}
+        engCnt={engCnt} setEngCnt={setEngCnt} ptQ={ptQ} setPtQ={setPtQ}
+        tempNexQ={tempNexQ} setTempNexQ={setTempNexQ} tempExQ={tempExQ} setTempExQ={setTempExQ}
+        uviQ={uviQ} setUviQ={setUviQ} flowQ={flowQ} setFlowQ={setFlowQ}
+        mfgR={bwMfg} setMfgR={setBwMfg} sgaR={bwSga} setSgaR={setBwSga}/>}
+      {tab===2&&<RatesTab scR={scR} setScR={setScR} bwR={bwR} setBwR={setBwR} scDef={scDef} bwDef={bwDef}/>}
+      {tab===3&&<DefaultTab scR={scR} bwR={bwR} scDef={scDef} bwDef={bwDef}
+        setScDef={setScDef} setBwDef={setBwDef} setScR={setScR} setBwR={setBwR}/>}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
