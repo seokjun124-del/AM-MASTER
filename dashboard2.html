@@ -212,6 +212,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
     <span class="nav-text">선주사 / 국가별 분석</span>
   </button>
+  <button class="nav-item" onclick="showPage('calc',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+    <span class="nav-text">원가 계산기</span>
+  </button>
+  <button class="nav-item" onclick="showPage('member',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span class="nav-text">담당자별 현황</span>
+  </button>
 
   <div class="sidebar-ext">
     <div class="nav-text" style="padding:12px 14px 4px;font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;letter-spacing:1px;text-transform:uppercase">외부 링크</div>
@@ -445,7 +453,123 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f7;display:flex;hei
     </div>
   </div>
 
-  <!-- ===== COUNTRY ===== -->
+  <!-- ===== MEMBER ===== -->
+  <div class="page" id="page-member">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <h1>👤 담당자별 현황</h1>
+        <p>담당자별 영업 현황 및 수주 상태를 확인합니다</p>
+      </div>
+      <button onclick="openMemberSettings()" style="padding:8px 16px;background:#fff;border:1.5px solid #1e6fd9;border-radius:8px;color:#1e6fd9;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⚙️ 담당자 설정</button>
+    </div>
+
+    <!-- 담당자 선택 버튼 -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap" id="memberTabs"></div>
+
+    <!-- 결과 영역 -->
+    <div id="memberResult" style="display:none">
+      <!-- 요약 카드 -->
+      <div id="memberCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+
+      <!-- 국가별 분포 + 수주 현황 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
+          <div style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e">🌍 담당 국가별 선박 현황</div>
+          <div id="memberCountryList" style="padding:8px;max-height:280px;overflow-y:auto"></div>
+        </div>
+        <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
+          <div style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e">📊 수주 현황 요약</div>
+          <div id="memberStats" style="padding:16px"></div>
+        </div>
+      </div>
+
+      <!-- 재계약 컨택 우선순위 -->
+      <div id="memberContactWrap" style="display:none;background:#fff1f1;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:10px">⚠️ 재계약 컨택 우선순위</div>
+        <div id="memberContactList"></div>
+      </div>
+
+      <!-- 전체 선박 리스트 -->
+      <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden">
+        <div style="padding:12px 16px;background:#f6f8fc;border-bottom:1px solid #eaecf5;font-size:13px;font-weight:700;color:#0d1b3e" id="memberVesselTitle"></div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px;table-layout:fixed">
+            <colgroup>
+              <col style="width:36px"><col style="width:65px"><col style="width:85px">
+              <col style="width:155px"><col style="width:100px"><col style="width:135px">
+              <col style="width:65px"><col style="width:130px"><col style="width:65px">
+              <col style="width:95px"><col style="width:55px"><col style="width:70px">
+              <col style="width:55px"><col style="width:55px">
+            </colgroup>
+            <thead>
+              <tr style="background:rgb(139,170,225)">
+                <th colspan="5" style="padding:6px 10px;text-align:center;font-size:10px;color:#fff;font-weight:600;border-right:2px solid rgba(255,255,255,0.3)">선박 정보</th>
+                <th colspan="2" style="padding:6px 10px;text-align:center;font-size:10px;color:#fff;font-weight:600;border-right:2px solid rgba(255,255,255,0.3)">선주사 정보</th>
+                <th colspan="3" style="padding:6px 10px;text-align:center;font-size:10px;color:#fff;font-weight:600;border-right:2px solid rgba(255,255,255,0.3)">장비 정보</th>
+                <th colspan="4" style="padding:6px 10px;text-align:center;font-size:10px;color:#fff;font-weight:600">수주 현황</th>
+              </tr>
+              <tr style="background:#f6f8fc;border-bottom:1px solid #eaecf5">
+                <th style="padding:8px;text-align:center;font-size:11px;color:#5a6480;font-weight:700">담기</th>
+                <th style="padding:8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">유형</th>
+                <th onclick="sortMember('imo')" style="padding:8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">IMO ↕</th>
+                <th onclick="sortMember('ship')" style="padding:8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">선명 ↕</th>
+                <th onclick="sortMember('project')" style="padding:8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;border-right:2px solid #e8ecf5">프로젝트 ↕</th>
+                <th onclick="sortMember('owner')" style="padding:8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">선주사 ↕</th>
+                <th onclick="sortMember('country')" style="padding:8px;text-align:left;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer;border-right:2px solid #e8ecf5">국가 ↕</th>
+                <th style="padding:8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">장비SPEC</th>
+                <th style="padding:8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700">도면/OTP</th>
+                <th style="padding:8px;text-align:left;font-size:11px;color:#5a6480;font-weight:700;border-right:2px solid #e8ecf5">센서</th>
+                <th onclick="sortMember('order25')" style="padding:8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">2025수주 ↕</th>
+                <th onclick="sortMember('date25')" style="padding:8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">2025승선일 ↕</th>
+                <th onclick="sortMember('est26')" style="padding:8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">2026견적 ↕</th>
+                <th onclick="sortMember('order26')" style="padding:8px;text-align:center;font-size:11px;color:#0d1b3e;font-weight:700;cursor:pointer">2026수주 ↕</th>
+              </tr>
+            </thead>
+            <tbody id="memberVesselTb"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 담당자 설정 모달 -->
+  <div id="memberSettingsOverlay" onclick="closeMemberSettings(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1100;align-items:center;justify-content:center">
+    <div onclick="event.stopPropagation()" style="background:#fff;border-radius:14px;width:560px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <!-- 헤더 -->
+      <div style="padding:18px 20px;border-bottom:1px solid #e8ecf5;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#0d1b3e">⚙️ 담당자 설정</div>
+          <div style="font-size:11px;color:#7a85a3;margin-top:3px">국가별 담당자를 설정합니다. 설정은 이 브라우저에 저장됩니다.</div>
+        </div>
+        <button onclick="document.getElementById('memberSettingsOverlay').style.display='none'" style="width:28px;height:28px;border-radius:50%;border:none;background:#f0f2f7;color:#5a6480;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">✕</button>
+      </div>
+      <!-- 목록 -->
+      <div style="overflow-y:auto;flex:1;padding:8px 0">
+        <!-- 테이블 헤더 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#f6f8fc;border-bottom:1px solid #e8ecf5;position:sticky;top:0">
+          <span style="font-size:11px;font-weight:700;color:#5a6480;text-transform:uppercase;letter-spacing:0.5px">국가</span>
+          <span style="font-size:11px;font-weight:700;color:#5a6480;text-transform:uppercase;letter-spacing:0.5px">담당자</span>
+        </div>
+        <div id="memberSettingsList"></div>
+      </div>
+      <!-- 버튼 -->
+      <div style="padding:14px 20px;border-top:1px solid #e8ecf5;display:flex;gap:8px;flex-shrink:0;background:#fff;border-radius:0 0 14px 14px">
+        <button onclick="saveMemberSettings()" style="flex:1;padding:10px;background:#1e6fd9;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">💾 저장</button>
+        <button onclick="resetMemberSettings()" style="padding:10px 16px;background:#f6f8fc;color:#5a6480;border:1px solid #e8ecf5;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CALC ===== -->
+  <div class="page" id="page-calc">
+    <div class="page-header">
+      <h1>🧮 원가 계산기</h1>
+      <p>BWTS · SOX Scrubber MRO 서비스 원가 및 견적 계산</p>
+    </div>
+    <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf5;overflow:hidden;height:calc(100vh - 160px)">
+      <iframe src="panasia_mro_2.html" style="width:100%;height:100%;border:none" title="원가 계산기"></iframe>
+    </div>
+  </div>
   <div class="page" id="page-country">
     <div class="page-header">
       <h1>🌍 선주사 / 국가별 분석</h1>
@@ -877,6 +1001,7 @@ function showPage(id, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   el.classList.add('active');
+  if(id==='member') initMemberPage();
 }
 
 // 사이드바 토글
@@ -936,7 +1061,7 @@ function initDash() {
     if(!k || invalidOwners.includes(k.toLowerCase())) return;
     if(!om[k]) om[k] = {owner:k, country:r.country||'', bwts:0, bwts25:0, sox:0, sox25:0};
     om[k].sox++;
-    if(r.status==='계약유효') om[k].sox25++;
+    if(r.status==='Active'||r.status==='계약유효') om[k].sox25++;
   });
 
   const sorted = Object.values(om)
@@ -1374,7 +1499,7 @@ function openModal(idx) {
         ${r.amt25?`<div style="margin-top:10px;padding:10px 14px;background:#e8f0fd;border-radius:10px"><label style="font-size:11px;color:#1e6fd9;font-weight:700">2025 수주금액</label><div style="font-size:18px;font-weight:700;color:#1e6fd9;margin-top:3px">USD ${Number(r.amt25).toLocaleString()}</div></div>`:''}
       </div>`;
   } else {
-    const statusColor = r.status==='계약유효'?'#10b981':r.status==='계약파기'?'#ef4444':'#f59e0b';
+    const statusColor = (r.status==='Active'||r.status==='계약유효')?'#10b981':r.status==='계약파기'?'#ef4444':'#f59e0b';
     document.getElementById('mBody').innerHTML = `
       <div class="m-section">
         ${secTitle('선박 정보')}
@@ -1423,7 +1548,275 @@ function exportExcel(){
   XLSX.writeFile(wb,'PANASIA_AM_선박현황.xlsx');
 }
 
-// ======================== COUNTRY / OWNER ========================
+// ======================== 담당자별 현황 ========================
+const MEMBERS = ['윤석준', '최재원', '채준식', '염예준', '미배정'];
+
+const DEFAULT_MEMBER_MAP = {
+  '노르웨이':'윤석준','덴마크':'윤석준','독일':'윤석준','영국':'윤석준',
+  '스웨덴':'윤석준','크로아티아':'윤석준','우크라이나':'윤석준','이스라엘':'윤석준',
+  '미국':'윤석준','인도':'윤석준',
+  '그리스':'최재원',
+  '스위스':'채준식','이탈리아':'채준식','싱가폴':'채준식','홍콩':'채준식',
+  '네덜란드':'염예준','러시아':'염예준','터키':'염예준','키프로스':'염예준',
+  '필리핀':'염예준','말레이시아':'염예준','대만':'염예준',
+  '중국':'미배정','일본':'미배정'
+};
+
+let _memberMap = {};
+let _selMember = null;
+let _memberSortState = {key:null, asc:true};
+let _memberVessels = [];
+
+function initMemberMap() {
+  try {
+    const saved = localStorage.getItem('panasia_member_map');
+    _memberMap = saved ? JSON.parse(saved) : {...DEFAULT_MEMBER_MAP};
+  } catch(e) {
+    _memberMap = {...DEFAULT_MEMBER_MAP};
+  }
+}
+
+function normCountry(c) {
+  if(!c) return '';
+  const u = c.trim().toUpperCase();
+  // 영문 국가명 → 한국어 매핑
+  const map = {
+    'NORWAY':'노르웨이','DENMARK':'덴마크','GERMANY':'독일','UK':'영국',
+    'UNITED KINGDOM':'영국','SWEDEN':'스웨덴','CROATIA':'크로아티아',
+    'UKRAINE':'우크라이나','ISRAEL':'이스라엘','USA':'미국','UNITED STATES':'미국',
+    'INDIA':'인도','GREECE':'그리스','SWITZERLAND':'스위스','ITALY':'이탈리아',
+    'SINGAPORE':'싱가폴','HONG KONG':'홍콩','NETHERLANDS':'네덜란드',
+    'RUSSIA':'러시아','TURKEY':'터키','CYPRUS':'키프로스','PHILIPPINES':'필리핀',
+    'MALAYSIA':'말레이시아','TAIWAN':'대만','CHINA':'중국','JAPAN':'일본',
+    'SOUTH KOREA':'한국','KOREA':'한국'
+  };
+  return map[u] || c.trim();
+}
+
+function getMemberForCountry(country) {
+  const kr = normCountry(country);
+  return _memberMap[kr] || _memberMap[country] || '미배정';
+}
+
+function initMemberPage() {
+  initMemberMap();
+  // 담당자 탭 버튼 렌더링
+  document.getElementById('memberTabs').innerHTML = MEMBERS.map(m => `
+    <button onclick="selMember('${m}')" id="mtab-${m}" style="padding:8px 18px;border-radius:8px;border:1.5px solid #e8ecf5;background:#fff;color:#5a6480;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s">
+      ${m}
+    </button>`).join('');
+}
+
+function selMember(name) {
+  _selMember = name;
+  _memberSortState = {key:null, asc:true};
+
+  // 탭 버튼 스타일
+  MEMBERS.forEach(m => {
+    const btn = document.getElementById(`mtab-${m}`);
+    if(btn) {
+      btn.style.background = m===name ? '#1e6fd9' : '#fff';
+      btn.style.color = m===name ? '#fff' : '#5a6480';
+      btn.style.borderColor = m===name ? '#1e6fd9' : '#e8ecf5';
+    }
+  });
+
+  // 해당 담당자 국가 목록
+  const myCountries = Object.entries(_memberMap)
+    .filter(([c,m])=>m===name)
+    .map(([c])=>c);
+
+  // 데이터 필터링
+  const allV = allData();
+  const filtered = allV.filter(r => {
+    const kr = normCountry(r.country);
+    return getMemberForCountry(r.country) === name;
+  });
+
+  _memberVessels = filtered;
+  curData = filtered;
+
+  document.getElementById('memberResult').style.display = 'block';
+
+  // 요약 카드
+  const bF = filtered.filter(r=>r._t==='BWTS');
+  const sF = filtered.filter(r=>r._t==='SCRUBBER');
+  const needContact = bF.filter(r=>{
+    if(!r.order25||r.est26) return false;
+    const d=parseDate25(r.date25);
+    return d&&Math.floor((new Date()-d)/(1000*60*60*24))>=330;
+  });
+
+  document.getElementById('memberCards').innerHTML = `
+    <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8ecf5;border-top:3px solid #1e6fd9">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">담당 국가</div>
+      <div style="font-size:24px;font-weight:800;color:#0d1b3e">${myCountries.length}<span style="font-size:12px;color:#9ba3bc;font-weight:400">개국</span></div>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8ecf5;border-top:3px solid #1e6fd9">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">BWTS 선박</div>
+      <div style="font-size:24px;font-weight:800;color:#0d1b3e">${bF.length}<span style="font-size:12px;color:#9ba3bc;font-weight:400">척</span></div>
+    </div>
+    <div style="background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8ecf5;border-top:3px solid #10b981">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">SOX 선박</div>
+      <div style="font-size:24px;font-weight:800;color:#0d1b3e">${sF.length}<span style="font-size:12px;color:#9ba3bc;font-weight:400">건</span></div>
+    </div>
+    <div style="background:${needContact.length>0?'#fff1f1':'#fff'};border-radius:10px;padding:14px 16px;border:1px solid ${needContact.length>0?'#fca5a5':'#e8ecf5'};border-top:3px solid ${needContact.length>0?'#ef4444':'#e8ecf5'}">
+      <div style="font-size:11px;color:#7a85a3;font-weight:600;margin-bottom:6px">재계약 컨택 필요</div>
+      <div style="font-size:24px;font-weight:800;color:${needContact.length>0?'#ef4444':'#0d1b3e'}">${needContact.length}<span style="font-size:12px;color:#9ba3bc;font-weight:400">척</span></div>
+    </div>`;
+
+  // 국가별 분포
+  const countryStats = {};
+  filtered.forEach(r => {
+    const kr = normCountry(r.country) || r.country || '-';
+    if(!countryStats[kr]) countryStats[kr] = {bwts:0,sox:0,contact:0};
+    if(r._t==='BWTS') {
+      countryStats[kr].bwts++;
+      if(needContact.find(n=>n.imo===r.imo)) countryStats[kr].contact++;
+    } else countryStats[kr].sox++;
+  });
+
+  document.getElementById('memberCountryList').innerHTML = Object.entries(countryStats)
+    .sort((a,b)=>(b[1].bwts+b[1].sox)-(a[1].bwts+a[1].sox))
+    .map(([c,s])=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #f0f2f7">
+        <span style="font-size:12px;font-weight:600;color:#0d1b3e">${c}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${s.bwts>0?`<span style="font-size:11px;background:#dbeafe;color:#1d4ed8;padding:2px 7px;border-radius:4px">BWTS ${s.bwts}</span>`:''}
+          ${s.sox>0?`<span style="font-size:11px;background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:4px">SOX ${s.sox}</span>`:''}
+          ${s.contact>0?`<span style="font-size:11px;background:#fee2e2;color:#b91c1c;padding:2px 7px;border-radius:4px">컨택 ${s.contact}</span>`:''}
+        </div>
+      </div>`).join('') || '<div style="padding:16px;color:#9ba3bc;text-align:center;font-size:13px">데이터 없음</div>';
+
+  // 수주 현황 요약
+  const b25 = bF.filter(r=>r.order25).length;
+  const b26 = bF.filter(r=>r.order26).length;
+  const est26 = bF.filter(r=>r.est26).length;
+  const sValid = sF.filter(r=>r.status==='Active'||r.status==='계약유효').length;
+  const pct = (n,d) => d>0 ? Math.round(n/d*100)+'%' : '-';
+
+  document.getElementById('memberStats').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="padding:12px;background:#f6f8fc;border-radius:8px">
+        <div style="font-size:11px;color:#7a85a3;margin-bottom:8px;font-weight:600">BWTS 수주 현황</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:12px;color:#5a6480">2025 수주</span>
+          <span style="font-size:13px;font-weight:700;color:#1e6fd9">${b25}척 (${pct(b25,bF.length)})</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:12px;color:#5a6480">2026 견적 발송</span>
+          <span style="font-size:13px;font-weight:700;color:#f59e0b">${est26}척 (${pct(est26,bF.length)})</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:12px;color:#5a6480">2026 수주</span>
+          <span style="font-size:13px;font-weight:700;color:#10b981">${b26}척 (${pct(b26,bF.length)})</span>
+        </div>
+      </div>
+      <div style="padding:12px;background:#f6f8fc;border-radius:8px">
+        <div style="font-size:11px;color:#7a85a3;margin-bottom:8px;font-weight:600">SOX 계약 현황</div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:12px;color:#5a6480">계약 유효 (Active)</span>
+          <span style="font-size:13px;font-weight:700;color:#10b981">${sValid}건 (${pct(sValid,sF.length)})</span>
+        </div>
+      </div>
+    </div>`;
+
+  // 재계약 컨택 우선순위
+  const contactWrap = document.getElementById('memberContactWrap');
+  if(needContact.length > 0) {
+    contactWrap.style.display = 'block';
+    const sorted = [...needContact].sort((a,b)=>{
+      const da=parseDate25(a.date25), db=parseDate25(b.date25);
+      return (da||0)-(db||0);
+    });
+    document.getElementById('memberContactList').innerHTML = sorted.map(r=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#fff;border-radius:6px;margin-bottom:6px">
+        <div>
+          <span style="font-weight:700;color:#0d1b3e;font-size:12px">${r.ship}</span>
+          <span style="font-size:11px;color:#9ba3bc;margin-left:8px">${r.owner}</span>
+        </div>
+        <div style="text-align:right">
+          <span style="font-size:11px;color:#5a6480">2025 승선일: ${r.date25||'-'}</span>
+        </div>
+      </div>`).join('');
+  } else {
+    contactWrap.style.display = 'none';
+  }
+
+  // 선박 리스트
+  document.getElementById('memberVesselTitle').textContent =
+    `${name} 담당 선박 전체 (BWTS ${bF.length}척 · SOX ${sF.length}건)`;
+  renderMemberVessels(filtered);
+}
+
+function renderMemberVessels(data) {
+  document.getElementById('memberVesselTb').innerHTML =
+    data.map((r,idx) => makeRow(r,idx)).join('') ||
+    '<tr><td colspan="14" style="padding:20px;text-align:center;color:#9ba3bc">데이터가 없습니다</td></tr>';
+}
+
+function sortMember(key) {
+  if(_memberSortState.key===key) _memberSortState.asc=!_memberSortState.asc;
+  else {_memberSortState.key=key; _memberSortState.asc=true;}
+  _memberVessels = [..._memberVessels].sort((a,b)=>{
+    let va=a[key]||'', vb=b[key]||'';
+    if(!isNaN(va)&&!isNaN(vb)&&va!==''&&vb!==''){va=parseFloat(va);vb=parseFloat(vb);}
+    else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}
+    if(va<vb) return _memberSortState.asc?-1:1;
+    if(va>vb) return _memberSortState.asc?1:-1;
+    return 0;
+  });
+  curData = _memberVessels;
+  renderMemberVessels(_memberVessels);
+}
+
+function openMemberSettings() {
+  const allCountries = [...new Set([
+    ...Object.keys(_memberMap),
+    ...Object.keys(DEFAULT_MEMBER_MAP),
+    ...[...BWTS,...SOX].map(r=>normCountry(r.country)).filter(Boolean)
+  ])].filter(c=>c&&c!=='-').sort();
+
+  document.getElementById('memberSettingsList').innerHTML = allCountries.map((c,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid #f0f2f7;background:${i%2===0?'#fff':'#fafbfc'}">
+      <span style="font-size:13px;color:#0d1b3e;font-weight:500">${c}</span>
+      <select id="mset-${c.replace(/[^a-zA-Z0-9가-힣]/g,'_')}" style="padding:5px 10px;border:1px solid #d9dff0;border-radius:6px;font-size:12px;font-family:inherit;background:#fff;color:#0d1b3e">
+        ${MEMBERS.map(m=>`<option value="${m}" ${(_memberMap[c]||'미배정')===m?'selected':''}>${m}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  document.getElementById('memberSettingsOverlay').style.display = 'flex';
+}
+
+function saveMemberSettings() {
+  const allCountries = [...new Set([
+    ...Object.keys(_memberMap),
+    ...Object.keys(DEFAULT_MEMBER_MAP),
+    ...[...BWTS,...SOX].map(r=>normCountry(r.country)).filter(Boolean)
+  ])].filter(c=>c&&c!=='-').sort();
+
+  allCountries.forEach(c => {
+    const sel = document.getElementById('mset-'+c.replace(/[^a-zA-Z0-9가-힣]/g,'_'));
+    if(sel) _memberMap[c] = sel.value;
+  });
+
+  try { localStorage.setItem('panasia_member_map', JSON.stringify(_memberMap)); } catch(e){}
+  document.getElementById('memberSettingsOverlay').style.display = 'none';
+  if(_selMember) selMember(_selMember);
+  alert('저장됐어요! ✅');
+}
+
+function resetMemberSettings() {
+  if(!confirm('담당자 설정을 초기값으로 되돌릴까요?')) return;
+  _memberMap = {...DEFAULT_MEMBER_MAP};
+  try { localStorage.removeItem('panasia_member_map'); } catch(e){}
+  openMemberSettings();
+}
+
+function closeMemberSettings(e) {
+  if(e.target===document.getElementById('memberSettingsOverlay'))
+    document.getElementById('memberSettingsOverlay').style.display = 'none';
+}
 let aMode='country', selItem=null, _prevCountry=null;
 let _cAllCountries=[], _cAllOwners=[];
 let _currentOwnerVessels=[];
@@ -1539,9 +1932,9 @@ function showMultiOwner(){
           <span style="font-size:11px;color:#10b981;background:rgba(255,255,255,0.6);padding:2px 6px;border-radius:4px">SOX ${sox.length}건</span>
           <span style="font-size:11px;color:#1a3a6b">2025수주 ${b25} · 2026수주 ${b26} · SOX유효 ${sv}</span>
         </div>
-        <span id="acc-icon-${oid}" style="color:#1a3a6b;font-size:16px">▼</span>
+        <span id="acc-icon-${oid}" style="color:#1a3a6b;font-size:16px">▲</span>
       </div>
-      <div id="acc-${oid}" style="display:none;overflow-x:auto">
+      <div id="acc-${oid}" style="display:block;overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1100px;table-layout:fixed">
           <colgroup>
             <col style="width:36px">   <!-- 담기 -->
@@ -1637,7 +2030,7 @@ function toggleAccordion(id){
 function calcSummary(bF, sF){
   const b25=bF.filter(r=>r.order25).length;
   const b26=bF.filter(r=>r.order26).length;
-  const sValid=sF.filter(r=>r.status==='계약유효').length;
+  const sValid=sF.filter(r=>r.status==='Active'||r.status==='계약유효').length;
   const sEnd=sF.filter(r=>r.status==='계약종료').length;
   const needContact=bF.filter(r=>{
     if(!r.order25||r.est26) return false;
@@ -1702,7 +2095,7 @@ function selC(val){
       .map(o=>{
         const o25=o.bwts.filter(r=>r.order25).length;
         const o26=o.bwts.filter(r=>r.order26).length;
-        const sv=o.sox.filter(r=>r.status==='계약유효').length;
+        const sv=o.sox.filter(r=>r.status==='Active'||r.status==='계약유효').length;
         return `<tr style="border-bottom:1px solid #f0f2f7" onmouseover="this.style.background='#f8f9ff'" onmouseout="this.style.background=''">
           <td style="padding:10px 12px;font-weight:600;color:#0d1b3e">${o.owner}</td>
           <td style="padding:10px 12px;text-align:center;color:#1e6fd9;font-weight:700">${o.bwts.length||'-'}</td>
@@ -1966,6 +2359,43 @@ function sortSearch(key) {
   document.getElementById('rTb').innerHTML = curData.map((r,idx)=>makeRow(r,idx)).join('');
 }
 
+// 아코디언 내부 정렬 함수
+function sortAccordion(key, oid) {
+  const tbody = document.querySelector(`#acc-${oid} tbody`);
+  if(!tbody) return;
+
+  // 현재 tbody의 데이터 인덱스 수집
+  const rows = [...tbody.querySelectorAll('tr')];
+  if(!rows.length) return;
+
+  // _currentOwnerVessels에서 해당 아코디언 선주사의 데이터만 추출
+  const tbodyRows = rows.map(tr => {
+    const imoCell = tr.cells[2];
+    const imo = imoCell ? imoCell.textContent.trim() : '';
+    return _currentOwnerVessels.find(r => (r.imo||'') === imo);
+  }).filter(Boolean);
+
+  // 정렬
+  const asc = tbody.dataset.sortKey === key ? tbody.dataset.sortAsc !== 'true' : true;
+  tbody.dataset.sortKey = key;
+  tbody.dataset.sortAsc = asc;
+
+  tbodyRows.sort((a,b) => {
+    let va = a[key]||'', vb = b[key]||'';
+    if(!isNaN(va)&&!isNaN(vb)&&va!==''&&vb!==''){va=parseFloat(va);vb=parseFloat(vb);}
+    else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}
+    if(va<vb) return asc?-1:1;
+    if(va>vb) return asc?1:-1;
+    return 0;
+  });
+
+  // 글로벌 인덱스 찾아서 재렌더링
+  tbody.innerHTML = tbodyRows.map(r => {
+    const idx = curData.findIndex(c=>(c.imo||'')===(r.imo||'')&&c._t===r._t);
+    return makeRow(r, idx);
+  }).join('');
+}
+
 function sortVessels(key) {
   if(_sortState.key === key) _sortState.asc = !_sortState.asc;
   else { _sortState.key = key; _sortState.asc = true; }
@@ -1991,21 +2421,13 @@ function sortVessels(key) {
   const isMultiMode = accWrap && accWrap.style.display !== 'none' && _selectedOwners && _selectedOwners.size > 0;
 
   if(isMultiMode) {
-    // 열린 아코디언 상태 저장
-    const openStates = {};
+    showMultiOwner();
+    // 정렬 후 모든 아코디언 자동 펼침
     document.querySelectorAll('[id^="acc-"]').forEach(el => {
       if(el.id.startsWith('acc-icon-')) return;
-      openStates[el.id] = el.style.display === 'block';
-    });
-    showMultiOwner();
-    // 아코디언 상태 복원
-    Object.entries(openStates).forEach(([id, isOpen]) => {
-      const el = document.getElementById(id);
-      if(el && isOpen) {
-        el.style.display = 'block';
-        const icon = document.getElementById('acc-icon-' + id.replace('acc-',''));
-        if(icon) icon.textContent = '▲';
-      }
+      el.style.display = 'block';
+      const icon = document.getElementById('acc-icon-' + el.id.replace('acc-',''));
+      if(icon) icon.textContent = '▲';
     });
   } else {
     // 단일 테이블(cVesselTb) 재렌더링
